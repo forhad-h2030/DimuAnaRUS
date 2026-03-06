@@ -7,7 +7,7 @@ I	MaxHitsDC3p	100
 I	NSTEPS_FMAG	100
 I	NSTEPS_SHIELDING	50
 I	NSTEPS_TARGET	100
-I	PHG4SEG_EVENT_COUNT	76
+I	PHG4SEG_EVENT_COUNT	58
 I	RUNNUMBER	5433
 F	WorldSizex	1000
 F	WorldSizey	1000
@@ -75,10 +75,10 @@ D	Z_ST2	1347.36
 D	Z_ST3	1910
 D	Z_TARGET	-300
 D	Z_UPSTREAM	-700
-C	AlignmentHodo	/exp/seaquest/app/software/osg/software/e1039/resource/alignment/run6/alignment_hodo.txt
-C	AlignmentMille	/exp/seaquest/app/software/osg/software/e1039/resource/alignment/run6/align_mille.txt
-C	AlignmentProp	/exp/seaquest/app/software/osg/software/e1039/resource/alignment/run6/alignment_prop.txt
-C	Calibration	/exp/seaquest/app/software/osg/software/e1039/resource/alignment/run6/calibration.txt
+C	AlignmentHodo	
+C	AlignmentMille	
+C	AlignmentProp	
+C	Calibration	
 C	DB_SERVER	DB1
 C	DB_USER	seaguest
 C	EventReduceOpts	aoc
@@ -88,7 +88,7 @@ C	PHG4SEG_MUP_PARTICLES	mu+*1:mu-*1
 C	TRIGGER_EMU_L1	/exp/seaquest/app/software/osg/software/e1039/resource/trigger/trigger_67.txt
 C	TRIGGER_L1	67
 C	TRIGGER_Repo	/exp/seaquest/app/software/osg/software/e1039/resource/trigger
-C	VTX_GEN_MATERIAL_MODE	All
+C	VTX_GEN_MATERIAL_MODE	Target
 C	WorldShape	G4Box
 C	fMagFile	/exp/seaquest/app/software/osg/software/e1039/resource/geometry/magnetic_fields/Fmag.root
 C	kMagFile	/exp/seaquest/app/software/osg/software/e1039/resource/geometry/magnetic_fields/Kmag.root

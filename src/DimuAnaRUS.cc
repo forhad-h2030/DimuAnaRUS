@@ -75,7 +75,6 @@ int DimuAnaRUS::InitRun(PHCompositeNode* startNode)
 	}
 
 	m_tree->Branch("eventID", &eventID, "eventID/I");
-/*
 	m_tree->Branch("runID", &runID, "runID/I");
 	m_tree->Branch("spillID", &spillID, "spillID/I");
 	m_tree->Branch("eventID", &eventID, "eventID/I");
@@ -84,10 +83,10 @@ int DimuAnaRUS::InitRun(PHCompositeNode* startNode)
 	m_tree->Branch("rfIntensity", rfIntensity, "rfIntensity[33]/I");
 	m_tree->Branch("fpgaTrigger", fpgaTrigger, "fpgaTrigger[5]/I");
 	m_tree->Branch("nimTrigger", nimTrigger, "nimTrigger[5]/I");
-*/
+
     if(sqhit_flag){
         m_tree->Branch("hitID", &hitID);
-        m_tree->Branch("hit_trackID", &hit_trackID);
+        m_tree->Branch("hitTrackID", &hitTrackID);
         m_tree->Branch("processID", &processID);
         m_tree->Branch("detectorID", &detectorID);
         m_tree->Branch("elementID", &elementID);
@@ -97,7 +96,7 @@ int DimuAnaRUS::InitRun(PHCompositeNode* startNode)
 
 	if (true_mode) {
         m_tree->Branch("gCharge", &gCharge);
-        m_tree->Branch("trackID", &trackID);
+        m_tree->Branch("gTrackID", &gTrackID);
         m_tree->Branch("gvx", &gvx);
         m_tree->Branch("gvy", &gvy);
         m_tree->Branch("gvz", &gvz);
@@ -197,6 +196,9 @@ int DimuAnaRUS::InitRun(PHCompositeNode* startNode)
         m_tree->Branch("rec_dimuon_py_neg_dump", &rec_dimuon_py_neg_dump);
         m_tree->Branch("rec_dimuon_pz_neg_dump", &rec_dimuon_pz_neg_dump);
 
+
+        m_tree->Branch("rec_dimuon_mass_tgt", &rec_dimuon_mass_tgt);
+
         }
 	}
 
@@ -274,8 +276,7 @@ int DimuAnaRUS::process_event(PHCompositeNode* startNode)
 	//	return 0;  // Skip this event if no dimuons are present and the mode is enabled
 	//}
  
-	eventID = m_evt->get_event_id();
-	/*
+	   eventID = m_evt->get_event_id();
 	   runID = m_evt->get_run_id();
 	   spillID = m_evt->get_spill_id();
 	   rfID = m_evt->get_qie_rf_id();
@@ -295,7 +296,6 @@ int DimuAnaRUS::process_event(PHCompositeNode* startNode)
 	   for (int i = -16; i <= 16; ++i) {
 	   rfIntensity[i + 16] = m_evt->get_qie_rf_intensity(i);
 	   }
-	   */
 
 	const double muon_mass = 0.10566;
 	TLorentzVector mu1;
@@ -308,7 +308,7 @@ int DimuAnaRUS::process_event(PHCompositeNode* startNode)
 			//cout << "inside the true track loop: "<<endl;
 			SQTrack* trk = m_vec_trk->at(ii);
 			gCharge.push_back(trk->get_charge());
-			trackID.push_back(trk->get_track_id());
+			gTrackID.push_back(trk->get_track_id());
 			gvx.push_back(trk->get_pos_vtx().X());
 			gvy.push_back(trk->get_pos_vtx().Y());
 			gvz.push_back(trk->get_pos_vtx().Z());
@@ -386,16 +386,14 @@ int DimuAnaRUS::process_event(PHCompositeNode* startNode)
                         else processID_ = proc_id +10 ;
                         int sourceFlag_= SourceFlag;
                         unsigned int encodedValue = EncodeProcess(processID_, sourceFlag_);
-                        cout << "charge: "<< trk->get_charge() <<endl;
+                        //cout << "charge: "<< trk->get_charge() <<endl;
                         //cout << "encodedValue: "<< encodedValue<< endl;
                         //cout << "DecodeSourceFlag: "<< DecodeSourceFlag(encodedValue) << endl;
                         //cout << "DecodeProcessID: "<< DecodeProcessID(encodedValue) << endl;
                         //cout << "det Name: "<< hit->get_detector_id() << " Hit Id: "<< hit->get_hit_id () << endl;
-                        cout << "det ID: "<<  hit->get_detector_id()   << endl;
-
                         processID.push_back(encodedValue);
                         hitID.push_back(hit->get_hit_id());
-                        hit_trackID.push_back(hit->get_track_id());
+                        hitTrackID.push_back(hit->get_track_id());
                         detectorID.push_back(hit->get_detector_id());
                         elementID.push_back(hit->get_element_id());
                         tdcTime.push_back(hit->get_tdc_time());
@@ -420,7 +418,7 @@ int index = -1;
 			index+=1;
 			SRecTrack* trk = dynamic_cast<SRecTrack*>(*it);
 
-            //cout << "track id: "<< trk->get_rec_track_id ()  <<" charge: " << trk->get_charge() << "index: "<<endl;
+			//cout << "track id: "<< trk->get_rec_track_id ()  <<" charge: " << trk->get_charge() << "index: "<<endl;
 
 			rec_track_id.push_back(index);  // where i_trk is the index in the reco track loop
 			// Basic track info
@@ -480,16 +478,16 @@ int index = -1;
 			for (int i_hit = 0; i_hit < trk->get_num_hits(); ++i_hit) {
 				//cout <<"charge: "<< trk->get_charge()<< "  hit id of the tracks: " << trk->get_hit_id(i_hit) << endl;
 				hit_ids.push_back(trk->get_hit_id(i_hit));
-                auto [det_id, det_z_pos] = GetDetElemIDFromHitID(trk->get_hit_id(i_hit));
-                Double_t x = 0.0, y = 0.0;
-                trk->getExpPositionFast(static_cast<Double_t>(det_z_pos), x, y);
-                //cout << "x, y pos: (" << x << ", " << y << ")" << endl;
-                hit_ids_pos_x.push_back(x);
-                hit_ids_pos_y.push_back(y);
+				auto [det_id, det_z_pos] = GetDetElemIDFromHitID(trk->get_hit_id(i_hit));
+				Double_t x = 0.0, y = 0.0;
+				trk->getExpPositionFast(static_cast<Double_t>(det_z_pos), x, y);
+				//cout << "x, y pos: (" << x << ", " << y << ")" << endl;
+				hit_ids_pos_x.push_back(x);
+				hit_ids_pos_y.push_back(y);
 			}
 			rec_hit_ids.push_back(hit_ids);
-            rec_track_hit_x.push_back(hit_ids_pos_x);
-            rec_track_hit_y.push_back(hit_ids_pos_y);
+			rec_track_hit_x.push_back(hit_ids_pos_x);
+			rec_track_hit_y.push_back(hit_ids_pos_y);
 		}
 
 		if(reco_dimu_mode==true){
@@ -498,8 +496,65 @@ int index = -1;
 				SRecDimuon& sdim = dynamic_cast<SRecDimuon&>(**it);
 				int trk_id_pos = sdim.get_track_id_pos();
 				int trk_id_neg = sdim.get_track_id_neg();
-				SRecTrack& trk_pos = dynamic_cast<SRecTrack&>(*(m_sq_trk_vec->at(trk_id_pos))); 
-				SRecTrack& trk_neg = dynamic_cast<SRecTrack&>(*(m_sq_trk_vec->at(trk_id_neg))); 
+				SRecTrack& trk_pos = dynamic_cast<SRecTrack&>(*(m_sq_trk_vec->at(trk_id_pos)));
+				SRecTrack& trk_neg = dynamic_cast<SRecTrack&>(*(m_sq_trk_vec->at(trk_id_neg)));
+
+
+				//--------
+				//vtx
+				rec_dimuon_px_pos_vtx.push_back(trk_pos.get_mom_vtx().Px());
+				rec_dimuon_py_pos_vtx.push_back(trk_pos.get_mom_vtx().Py());
+				rec_dimuon_pz_pos_vtx.push_back(trk_pos.get_mom_vtx().Pz());
+
+				rec_dimuon_x_pos_vtx.push_back(trk_pos.get_pos_vtx().X());
+				rec_dimuon_y_pos_vtx.push_back(trk_pos.get_pos_vtx().Y());
+				rec_dimuon_z_pos_vtx.push_back(trk_pos.get_pos_vtx().Z());
+
+				rec_dimuon_px_neg_vtx.push_back(trk_neg.get_mom_vtx().Px());
+				rec_dimuon_py_neg_vtx.push_back(trk_neg.get_mom_vtx().Py());
+				rec_dimuon_pz_neg_vtx.push_back(trk_neg.get_mom_vtx().Pz());
+
+				rec_dimuon_x_neg_vtx.push_back(trk_neg.get_pos_vtx().X());
+				rec_dimuon_y_neg_vtx.push_back(trk_neg.get_pos_vtx().Y());
+				rec_dimuon_z_neg_vtx.push_back(trk_neg.get_pos_vtx().Z());
+
+
+				// Station 1 - positive trk
+				rec_dimuon_px_pos_st1.push_back(trk_pos.get_mom_st1().Px());
+				rec_dimuon_py_pos_st1.push_back(trk_pos.get_mom_st1().Py());
+				rec_dimuon_pz_pos_st1.push_back(trk_pos.get_mom_st1().Pz());
+
+				rec_dimuon_x_pos_st1.push_back(trk_pos.get_pos_st1().X());
+				rec_dimuon_y_pos_st1.push_back(trk_pos.get_pos_st1().Y());
+				rec_dimuon_z_pos_st1.push_back(trk_pos.get_pos_st1().Z());
+
+				// Station 3 - positive trk
+				rec_dimuon_px_pos_st3.push_back(trk_pos.get_mom_st3().Px());
+				rec_dimuon_py_pos_st3.push_back(trk_pos.get_mom_st3().Py());
+				rec_dimuon_pz_pos_st3.push_back(trk_pos.get_mom_st3().Pz());
+
+				rec_dimuon_x_pos_st3.push_back(trk_pos.get_pos_st3().X());
+				rec_dimuon_y_pos_st3.push_back(trk_pos.get_pos_st3().Y());
+				rec_dimuon_z_pos_st3.push_back(trk_pos.get_pos_st3().Z());
+
+
+				// Station 1 - negative trk
+				rec_dimuon_px_neg_st1.push_back(trk_neg.get_mom_st1().Px());
+				rec_dimuon_py_neg_st1.push_back(trk_neg.get_mom_st1().Py());
+				rec_dimuon_pz_neg_st1.push_back(trk_neg.get_mom_st1().Pz());
+
+				rec_dimuon_x_neg_st1.push_back(trk_neg.get_pos_st1().X());
+				rec_dimuon_y_neg_st1.push_back(trk_neg.get_pos_st1().Y());
+				rec_dimuon_z_neg_st1.push_back(trk_neg.get_pos_st1().Z());
+
+				// Station 3 - negative trk
+				rec_dimuon_px_neg_st3.push_back(trk_neg.get_mom_st3().Px());
+				rec_dimuon_py_neg_st3.push_back(trk_neg.get_mom_st3().Py());
+				rec_dimuon_pz_neg_st3.push_back(trk_neg.get_mom_st3().Pz());
+
+				rec_dimuon_x_neg_st3.push_back(trk_neg.get_pos_st3().X());
+				rec_dimuon_y_neg_st3.push_back(trk_neg.get_pos_st3().Y());
+				rec_dimuon_z_neg_st3.push_back(trk_neg.get_pos_st3().Z());
 
 
 				rec_dimuon_id.push_back(sdim.get_dimuon_id());
@@ -523,7 +578,6 @@ int index = -1;
 				rec_dimuon_px_neg_tgt.push_back(sdim.p_neg_target.Px());
 				rec_dimuon_py_neg_tgt.push_back(sdim.p_neg_target.Py());
 				rec_dimuon_pz_neg_tgt.push_back(sdim.p_neg_target.Pz());
-				cout << "mass neg: " << sdim.p_neg_target.M() << endl;
 				// ===== Dump hypothesis =====
 				sdim.calcVariables(2); // 2 = dump
 				rec_dimuon_px_pos_dump.push_back(sdim.p_pos_dump.Px());
@@ -533,7 +587,9 @@ int index = -1;
 				rec_dimuon_py_neg_dump.push_back(sdim.p_neg_dump.Py());
 				rec_dimuon_pz_neg_dump.push_back(sdim.p_neg_dump.Pz());
 
-			}   
+				TLorentzVector mom_tgt = sdim.p_pos_target + sdim.p_neg_target;
+				rec_dimuon_mass_tgt.push_back(mom_tgt.M());
+			}		
 		}
 	}
 	m_tree->Fill();
@@ -552,14 +608,14 @@ int DimuAnaRUS::End(PHCompositeNode* startNode)
 void DimuAnaRUS::ResetHitBranches() {
  	hitID.clear();
 	processID.clear();
- 	hit_trackID.clear();
+ 	hitTrackID.clear();
 	detectorID.clear();
 	elementID.clear();
 	tdcTime.clear();
 	driftDistance.clear();
 }
 void DimuAnaRUS::ResetTrueBranches() {
-	gCharge.clear(); trackID.clear();
+	gCharge.clear(); gTrackID.clear();
 	gvx.clear(); gvy.clear(); gvz.clear();
 	gpx.clear(); gpy.clear(); gpz.clear();
 	gx_st1.clear(); gy_st1.clear(); gz_st1.clear();
@@ -600,9 +656,47 @@ void DimuAnaRUS::ResetRecoDimuBranches() {
     rec_dimuon_px_neg_tgt.clear(); rec_dimuon_py_neg_tgt.clear(); rec_dimuon_pz_neg_tgt.clear();
     rec_dimuon_px_pos_dump.clear(); rec_dimuon_py_pos_dump.clear(); rec_dimuon_pz_pos_dump.clear();
     rec_dimuon_px_neg_dump.clear(); rec_dimuon_py_neg_dump.clear(); rec_dimuon_pz_neg_dump.clear();
+    rec_dimuon_mass_tgt.clear();
+
+    rec_dimuon_x_pos_vtx.clear();
+    rec_dimuon_y_pos_vtx.clear();
+    rec_dimuon_z_pos_vtx.clear();
+    rec_dimuon_px_pos_vtx.clear();
+    rec_dimuon_py_pos_vtx.clear();
+    rec_dimuon_pz_pos_vtx.clear();
+
+    rec_dimuon_x_neg_vtx.clear();
+    rec_dimuon_y_neg_vtx.clear();
+    rec_dimuon_z_neg_vtx.clear();
+    rec_dimuon_px_neg_vtx.clear();
+    rec_dimuon_py_neg_vtx.clear();
+    rec_dimuon_pz_neg_vtx.clear();
+
+    rec_dimuon_x_pos_st1.clear();
+    rec_dimuon_y_pos_st1.clear();
+    rec_dimuon_z_pos_st1.clear();
+    rec_dimuon_x_neg_st1.clear();
+    rec_dimuon_y_neg_st1.clear();
+    rec_dimuon_z_neg_st1.clear();
+    rec_dimuon_x_pos_st3.clear();
+    rec_dimuon_y_pos_st3.clear();
+    rec_dimuon_z_pos_st3.clear();
+    rec_dimuon_x_neg_st3.clear();
+    rec_dimuon_y_neg_st3.clear();
+    rec_dimuon_z_neg_st3.clear();
+    rec_dimuon_px_pos_st1.clear();
+    rec_dimuon_py_pos_st1.clear();
+    rec_dimuon_pz_pos_st1.clear();
+    rec_dimuon_px_neg_st1.clear();
+    rec_dimuon_py_neg_st1.clear();
+    rec_dimuon_pz_neg_st1.clear();
+    rec_dimuon_px_pos_st3.clear();
+    rec_dimuon_py_pos_st3.clear();
+    rec_dimuon_pz_pos_st3.clear();
+    rec_dimuon_px_neg_st3.clear();
+    rec_dimuon_py_neg_st3.clear();
+    rec_dimuon_pz_neg_st3.clear();
 }
-
-
 
 unsigned int DimuAnaRUS::EncodeProcess(int processID, int sourceFlag) {
         return ( (sourceFlag & 0x3) << 5 ) |  // 2 bits for sourceFlag (1-3)

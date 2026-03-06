@@ -102,6 +102,15 @@ void set_par2_pxpypz_range(
    //! Enable legacy vertex gen
    void enableLegacyVtxGen() { _legacy_vertexgenerator = true; } //Abi
   double _maxProbability;
+  void set_bend_range(const double lo_pos, const double hi_pos,
+                      const double lo_neg, const double hi_neg)
+  {
+    _bend_lo_pos = lo_pos;
+    _bend_hi_pos = hi_pos;
+    _bend_lo_neg = lo_neg;
+    _bend_hi_neg = hi_neg;
+    _apply_bend_cut = true;
+  }
 
 private:
 
@@ -163,6 +172,16 @@ private:
   static constexpr double BEAM_ENERGY = 120.0;   // GeV
   static constexpr double PROTON_MASS = 0.938;   // GeV/c^2
 
+
+   // Bend-plane (px/pz) cuts
+  double _bend_lo_pos;   // mu+ lower bound
+  double _bend_hi_pos;   // mu+ upper bound
+  double _bend_lo_neg;   // mu- lower bound
+  double _bend_hi_neg;   // mu- upper bound
+  bool   _apply_bend_cut;
+
+  // Dimuon pz < BEAM_ENERGY cut
+  bool   _apply_dimuon_pz_cut;
 
 
   bool _legacy_vertexgenerator;

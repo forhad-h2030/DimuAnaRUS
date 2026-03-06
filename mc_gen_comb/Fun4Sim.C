@@ -14,6 +14,7 @@ R__LOAD_LIBRARY(libembedding)
 R__LOAD_LIBRARY(libevt_filter)
 R__LOAD_LIBRARY(libktracker)
 R__LOAD_LIBRARY(libSQPrimaryGen)
+R__LOAD_LIBRARY(fun4all_rus_file_manager)
 
 using namespace std;
 
@@ -41,7 +42,7 @@ int Fun4Sim(const int nevent = 10)
 	const double KMAGSTR = -1.025;
 
 	//! Particle generator flag.  Only one of these must be true.
-	const bool gen_particle_with_exp_pdf =true;
+	const bool gen_particle_with_exp_pdf =false;
 	const bool read_hepmc   = false;
 
 	//! Use SQPrimaryVertexGen or not.
@@ -101,9 +102,11 @@ int Fun4Sim(const int nevent = 10)
 		}
 	if(gen_particle_with_exp_pdf) comb->SetExpPDFMode(true);
     else{
-		comb->set_par1_pxpypz_range(-6.0,6.0, -4,4, 5,100);
-		comb->set_par2_pxpypz_range(-6.0,6.0, -4,4, 5,100);
-		comb->set_max_opening_angle(10);
+		comb->set_par1_pxpypz_range(-6.0,6.0, -4,4, 15,80);
+		comb->set_par2_pxpypz_range(-6.0,6.0, -4,4, 15,80);
+		comb->set_max_opening_angle(5);
+        comb->set_bend_range(-0.15, 0.0,   // mu+: lo, hi
+                              0.0,  0.15); // mu-: lo, hi
 	}
         //comb->Verbosity(1);
 		se->registerSubsystem(comb);
@@ -155,18 +158,14 @@ int Fun4Sim(const int nevent = 10)
         //MuonTrackFilter* muon_filter = new MuonTrackFilter();
         //muon_filter->SetAngleThreshold(0.0, 50.0); //in degree
         //se->registerSubsystem(muon_filter);
-
 	/// Save only events that are in the geometric acceptance.
 	SQGeomAcc* geom_acc = new SQGeomAcc();
-	//geom_acc->SetMuonMode(SQGeomAcc::PAIR); // PAIR, PAIR_TBBT, SINGLE, SINGLE_T, etc.
 	geom_acc->SetMuonMode(SQGeomAcc::PAIR_TBBT); // PAIR, PAIR_TBBT, SINGLE, SINGLE_T, etc.
 	geom_acc->SetPlaneMode(SQGeomAcc::HODO_CHAM); // HODO, CHAM or HODO_CHAM
 	geom_acc->SetNumOfH1EdgeElementsExcluded(4); // Exclude 4 elements at H1 edges
 	se->registerSubsystem(geom_acc);
-	// Make SQ nodes for truth info
 	se->registerSubsystem(new TruthNodeMaker());
 
-	// embedding
 	if(embedding_opt == 1) {
 		SRawEventEmbed *embed = new SRawEventEmbed("SRawEventEmbed");
 		embed->set_in_name("digit_016070_R007.root");
@@ -222,12 +221,6 @@ int Fun4Sim(const int nevent = 10)
 	///////////////////////////////////////////
 	// Output
 	///////////////////////////////////////////
-
-	// DST output manager
-	Fun4AllDstOutputManager *out = new Fun4AllDstOutputManager("DSTOUT", "DST.root");
-	se->registerOutputManager(out);
-
-
 	DimuAnaRUS* dimuAna = new DimuAnaRUS();
     dimuAna->SetTreeName("tree");
     dimuAna->SetMCTrueMode(true);
@@ -238,6 +231,11 @@ int Fun4Sim(const int nevent = 10)
     dimuAna->EnableSQHit(true);
 	dimuAna->SetProcessId(15);
     se->registerSubsystem(dimuAna);
+
+    //Fun4AllRUSOutputManager* tree = new Fun4AllRUSOutputManager();
+    //tree->SetTreeName("tree");
+    //tree->SetFileName("RUS.root");
+    //se->registerOutputManager(tree);
 
 	const bool count_only_good_events = true;
 	se->run(nevent, count_only_good_events);

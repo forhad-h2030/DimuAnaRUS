@@ -6,6 +6,8 @@ DIR_INST=$DIR_TOP/inst
 #E1039_CORE_VERSION=pr.155
 #E1039_CORE_DIR=/seaquest/users/$USER/e1039/git/core-inst
 FN_SETUP=/exp/seaquest/app/software/osg/software/e1039/this-e1039.sh
+#FN_SETUP=/seaquest/users/mhossain/i_o_Manager/core-inst/this-e1039.sh
+#FN_SETUP=/seaquest/users/mhossain/delete/core-inst/this-e1039.sh
 if [ ! -e $FN_SETUP ] ; then # On grid
     FN_SETUP=/cvmfs/seaquest.opensciencegrid.org/seaquest/${FN_SETUP#/exp/seaquest/app/software/osg/}
 fi

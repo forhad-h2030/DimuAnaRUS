@@ -94,20 +94,17 @@ class DimuAnaRUS: public SubsysReco {
 
 	// Scalar variables
 	int eventID;
-	/*
-	int runID;
 	int spillID;
-	int eventID;
+	int runID;
 	int rfID;
 	int turnID;
 	int rfIntensity[33];
 	int fpgaTrigger[5] = {0};
 	int nimTrigger[5] = {0};
-	*/
 
 	std::vector<int> hitID;
 	std::vector<int> processID;
-	std::vector<int> hit_trackID;
+	std::vector<int> hitTrackID;
 	std::vector<int> detectorID;
 	std::vector<int> elementID;
 	std::vector<double> tdcTime;
@@ -115,7 +112,7 @@ class DimuAnaRUS: public SubsysReco {
 	//std::vector<bool> hitsInTime;
 	// True track data
 
-	std::vector<int> gCharge, trackID;
+	std::vector<int> gCharge, gTrackID;
 
 	std::vector<double>
     gvx, gvy, gvz,
@@ -128,14 +125,28 @@ class DimuAnaRUS: public SubsysReco {
 	std::vector<int>
     rec_dimuon_id, rec_dimuon_true_id, rec_dimuon_track_id_pos, rec_dimuon_track_id_neg;
 
-	std::vector<double>
+
+	 std::vector<double>
     rec_dimuon_x, rec_dimuon_y, rec_dimuon_z,
     rec_dimuon_px_pos, rec_dimuon_py_pos, rec_dimuon_pz_pos,
     rec_dimuon_px_neg, rec_dimuon_py_neg, rec_dimuon_pz_neg,
     rec_dimuon_px_pos_tgt, rec_dimuon_py_pos_tgt, rec_dimuon_pz_pos_tgt,
     rec_dimuon_px_neg_tgt, rec_dimuon_py_neg_tgt, rec_dimuon_pz_neg_tgt,
     rec_dimuon_px_pos_dump, rec_dimuon_py_pos_dump, rec_dimuon_pz_pos_dump,
-    rec_dimuon_px_neg_dump, rec_dimuon_py_neg_dump, rec_dimuon_pz_neg_dump;
+    rec_dimuon_px_neg_dump, rec_dimuon_py_neg_dump, rec_dimuon_pz_neg_dump,
+    rec_dimuon_mass_tgt,
+    rec_dimuon_x_pos_vtx, rec_dimuon_y_pos_vtx, rec_dimuon_z_pos_vtx,
+    rec_dimuon_px_pos_vtx, rec_dimuon_py_pos_vtx, rec_dimuon_pz_pos_vtx,
+    rec_dimuon_x_neg_vtx, rec_dimuon_y_neg_vtx, rec_dimuon_z_neg_vtx,
+    rec_dimuon_px_neg_vtx, rec_dimuon_py_neg_vtx, rec_dimuon_pz_neg_vtx,
+    rec_dimuon_x_pos_st1, rec_dimuon_y_pos_st1, rec_dimuon_z_pos_st1,
+    rec_dimuon_x_neg_st1, rec_dimuon_y_neg_st1, rec_dimuon_z_neg_st1,
+    rec_dimuon_x_pos_st3, rec_dimuon_y_pos_st3, rec_dimuon_z_pos_st3,
+    rec_dimuon_x_neg_st3, rec_dimuon_y_neg_st3, rec_dimuon_z_neg_st3,
+    rec_dimuon_px_pos_st1, rec_dimuon_py_pos_st1, rec_dimuon_pz_pos_st1,
+    rec_dimuon_px_neg_st1, rec_dimuon_py_neg_st1, rec_dimuon_pz_neg_st1,
+    rec_dimuon_px_pos_st3, rec_dimuon_py_pos_st3, rec_dimuon_pz_pos_st3,
+    rec_dimuon_px_neg_st3, rec_dimuon_py_neg_st3, rec_dimuon_pz_neg_st3;
 
 
 	std::vector<int>
