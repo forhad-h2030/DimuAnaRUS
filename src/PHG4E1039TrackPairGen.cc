@@ -81,7 +81,13 @@ PHG4E1039TrackPairGen::PHG4E1039TrackPairGen(const string &name):
   _bend_lo_neg(-1.0),
   _bend_hi_neg( 1.0),
   _apply_bend_cut(false),
-  _apply_dimuon_pz_cut(true)
+  _apply_dimuon_pz_cut(true),
+  _mean_px_pos(-1.0), _sigma_px_pos(0.8),
+  _mean_py_pos( 0.0), _sigma_py_pos(0.8),
+  _mean_pz_pos(40.0), _sigma_pz_pos(15.0),
+  _mean_px_neg( 0.5), _sigma_px_neg(0.8),
+  _mean_py_neg( 0.0), _sigma_py_neg(0.8),
+  _mean_pz_neg(40.0), _sigma_pz_neg(15.0)
 {
 
 	_vertexGen = new SQPrimaryVertexGen();
@@ -393,6 +399,7 @@ int PHG4E1039TrackPairGen::process_event(PHCompositeNode *topNode) {
     for (unsigned int i = 0; i < _particle_names.size(); ++i) {
         muon_counter++;
         std::string pdgname = _particle_names[i].first;
+        //cout << "muon_counter "<<muon_counter <<"pdgname first "<< pdgname << endl;
         int pdgcode = get_pdgcode(pdgname);
         if (pdgcode == 0) {
             std::cout << PHWHERE << "::Error - Invalid PDG code for particle " << pdgname << std::endl;
@@ -493,28 +500,21 @@ bool PHG4E1039TrackPairGen::GenerateMomentumWithoutExpPDF(int muon_counter, int 
     if (muon_counter == 1) {
         // ----------------------------------------------------------------
         // Generate mu+ (pdgcode == -13)
+        // Sample px, py, pz from Gaussian distributions fitted to data
         // Cuts applied per iteration:
-        //   1. pT in [_pt_min, _pt_max]
-        //   2. Bend-plane ratio bend = px/pz in [_bend_lo_pos, _bend_hi_pos]  (if enabled)
+        //   1. pz in [_pz_par1_min, _pz_par1_max]
+        //   2. Bend-plane ratio bend = px/pz in [_bend_lo_pos, _bend_hi_pos]
         // ----------------------------------------------------------------
-        if (verbosity > 0)
-            std::cout << "Mu+ Vertex: (" << vtx_x << ", " << vtx_y << ", " << vtx_z << ")" << std::endl;
-
         do {
-            if (verbosity > 0)
-                std::cout << "par1 pdgcode: " << pdgcode
-                          << ", _pz_par1_min: " << _pz_par1_min
-                          << ", _pz_par1_max: " << _pz_par1_max << std::endl;
-
-            px = _px_par1_min + (_px_par1_max - _px_par1_min) * gsl_rng_uniform_pos(RandomGenerator);
-            py = _py_par1_min + (_py_par1_max - _py_par1_min) * gsl_rng_uniform_pos(RandomGenerator);
-            pz = _pz_par1_min + (_pz_par1_max - _pz_par1_min) * gsl_rng_uniform_pos(RandomGenerator);
+            px = gsl_ran_gaussian(RandomGenerator, _sigma_px_pos) + _mean_px_pos;
+            py = gsl_ran_gaussian(RandomGenerator, _sigma_py_pos) + _mean_py_pos;
+            pz = gsl_ran_gaussian(RandomGenerator, _sigma_pz_pos) + _mean_pz_pos;
             muon1.SetXYZM(px, py, pz, MUON_MASS);
 
-            // pT cut
-            bool pass_pt = (muon1.Pt() >= _pt_min && muon1.Pt() <= _pt_max);
+            // Reject unphysical pz tails
+            bool pass_pz = (pz >= _pz_par1_min && pz <= _pz_par1_max);
 
-            // Bend-plane cut for mu+ (pid == -13)
+            // Bend-plane cut for mu+
             bool pass_bend = true;
             if (_apply_bend_cut) {
                 double bend = px / pz;
@@ -523,18 +523,18 @@ bool PHG4E1039TrackPairGen::GenerateMomentumWithoutExpPDF(int muon_counter, int 
 
             if (verbosity > 0)
                 std::cout << "par1 (px, py, pz): (" << px << ", " << py << ", " << pz
-                          << "), Pt: " << muon1.Pt()
-                          << ", bend: " << px/pz
-                          << ", pass_pt: " << pass_pt
+                          << "), Pt: "    << muon1.Pt()
+                          << ", bend: "   << px/pz
+                          << ", pass_pz: "   << pass_pz
                           << ", pass_bend: " << pass_bend << std::endl;
 
-            if (pass_pt && pass_bend) break;
+            if (pass_pz && pass_bend) break;
             iteration++;
         } while (iteration < max_iterations);
 
         if (iteration >= max_iterations) {
             std::cout << PHWHERE << "::Warning - Max iterations reached for muon 1"
-                      << ", Pt=" << muon1.Pt()
+                      << ", pz="   << pz
                       << ", bend=" << px/pz << std::endl;
             return false;
         }
@@ -542,15 +542,14 @@ bool PHG4E1039TrackPairGen::GenerateMomentumWithoutExpPDF(int muon_counter, int 
     } else if (muon_counter == 2) {
         // ----------------------------------------------------------------
         // Generate mu- (pdgcode == 13)
+        // Sample px, py, pz from Gaussian distributions fitted to data
         // Cuts applied per iteration:
-        //   1. pT in [_pt_min, _pt_max]
-        //   2. Opening angle between mu+ and mu- < _theta_max
-        //   3. xF < 1.0
-        //   4. Bend-plane ratio bend = px/pz in [_bend_lo_neg, _bend_hi_neg]  (if enabled)
-        //   5. Dimuon pz (mu+ pz + mu- pz) < BEAM_ENERGY                      (if enabled)
+        //   1. pz in [_pz_par2_min, _pz_par2_max]
+        //   2. Bend-plane ratio bend = px/pz in [_bend_lo_neg, _bend_hi_neg]
+        //   3. Opening angle between mu+ and mu- < _theta_max
+        //   4. xF < 1.0
+        //   5. Dimuon pz < BEAM_ENERGY
         // ----------------------------------------------------------------
-        if (verbosity > 0)
-            std::cout << "Mu- Vertex: (" << vtx_x << ", " << vtx_y << ", " << vtx_z << ")" << std::endl;
 
         // Pre-compute CMS boost (does not depend on mu- kinematics)
         TLorentzVector p_beam(0., 0., sqrt(BEAM_ENERGY * BEAM_ENERGY - PROTON_MASS * PROTON_MASS), BEAM_ENERGY);
@@ -560,79 +559,71 @@ bool PHG4E1039TrackPairGen::GenerateMomentumWithoutExpPDF(int muon_counter, int 
         TVector3 bv_cms       = p_cms.BoostVector();
 
         do {
-            if (verbosity > 0) {
-                std::cout << "loop 2 pdgcode: " << pdgcode << std::endl;
-                std::cout << "_pz_par2_min: " << _pz_par2_min
-                          << ", _pz_par2_max: " << _pz_par2_max << std::endl;
-                std::cout << "Vertex: (" << vtx_x << ", " << vtx_y << ", " << vtx_z << ")" << std::endl;
-            }
-
-            px = _px_par2_min + (_px_par2_max - _px_par2_min) * gsl_rng_uniform_pos(RandomGenerator);
-            py = _py_par2_min + (_py_par2_max - _py_par2_min) * gsl_rng_uniform_pos(RandomGenerator);
-            pz = _pz_par2_min + (_pz_par2_max - _pz_par2_min) * gsl_rng_uniform_pos(RandomGenerator);
+            px = gsl_ran_gaussian(RandomGenerator, _sigma_px_neg) + _mean_px_neg;
+            py = gsl_ran_gaussian(RandomGenerator, _sigma_py_neg) + _mean_py_neg;
+            pz = gsl_ran_gaussian(RandomGenerator, _sigma_pz_neg) + _mean_pz_neg;
             muon2.SetXYZM(px, py, pz, MUON_MASS);
 
-            // pT cut
-            bool pass_pt = (muon2.Pt() >= _pt_min && muon2.Pt() <= _pt_max);
+            // Reject unphysical pz tails
+            bool pass_pz = (pz >= _pz_par2_min && pz <= _pz_par2_max);
 
-            // Opening-angle cut
-            angle = muon1.Vect().Angle(muon2.Vect()) * (180.0 / M_PI);
-            bool pass_angle = (angle < _theta_max);
-
-            // xF cut
-            TLorentzVector p_sum = muon1 + muon2;
-            double mass = p_sum.M();
-            TLorentzVector p_sum_cms = p_sum;
-            p_sum_cms.Boost(-bv_cms);
-            xF = 2. * p_sum_cms.Pz() / TMath::Sqrt(s) / (1. - mass * mass / s);
-            bool pass_xF = (xF < 1.0);
-
-            // Bend-plane cut for mu- (pid == 13)
+            // Bend-plane cut for mu-
             bool pass_bend = true;
             if (_apply_bend_cut) {
                 double bend = px / pz;
                 pass_bend = (bend >= _bend_lo_neg && bend <= _bend_hi_neg);
             }
 
+            // Opening angle cut
+            angle = muon1.Vect().Angle(muon2.Vect()) * (180.0 / M_PI);
+            bool pass_angle = (angle < _theta_max);
+
+            // xF cut
+            TLorentzVector p_sum     = muon1 + muon2;
+            double mass              = p_sum.M();
+            TLorentzVector p_sum_cms = p_sum;
+            p_sum_cms.Boost(-bv_cms);
+            xF = 2. * p_sum_cms.Pz() / TMath::Sqrt(s) / (1. - mass * mass / s);
+            bool pass_xF = (xF < 1.0);
+
             // Dimuon pz < BEAM_ENERGY cut
-            // Uses the scalar sum of the two muon pz values as a proxy for
-            // the dimuon longitudinal momentum in the lab frame.
             bool pass_dimuon_pz = true;
             if (_apply_dimuon_pz_cut) {
-                double dimuon_pz = muon1.Pz() + pz;   // mu+ pz + mu- pz
-                pass_dimuon_pz = (dimuon_pz < BEAM_ENERGY);
+                double dimuon_pz = muon1.Pz() + pz;
+                pass_dimuon_pz   = (dimuon_pz < BEAM_ENERGY);
             }
 
-            if (verbosity > 0) {
+            if (verbosity > 0)
                 std::cout << "par2 (px, py, pz): (" << px << ", " << py << ", " << pz << ")"
                           << ", Pt: "        << muon2.Pt()
                           << ", angle: "     << angle
                           << ", xF: "        << xF
                           << ", bend: "      << px/pz
                           << ", dimuon_pz: " << muon1.Pz() + pz
-                          << ", pass_pt: "        << pass_pt
+                          << ", pass_pz: "        << pass_pz
+                          << ", pass_bend: "      << pass_bend
                           << ", pass_angle: "     << pass_angle
                           << ", pass_xF: "        << pass_xF
-                          << ", pass_bend: "      << pass_bend
                           << ", pass_dimuon_pz: " << pass_dimuon_pz << std::endl;
-            }
 
-            if (pass_pt && pass_angle && pass_xF && pass_bend && pass_dimuon_pz) break;
+            if (pass_pz && pass_bend && pass_angle && pass_xF && pass_dimuon_pz) break;
             iteration++;
         } while (iteration < max_iterations);
 
         if (iteration >= max_iterations) {
             std::cout << PHWHERE << "::Warning - Max iterations reached for muon 2"
-                      << ", Pt="        << muon2.Pt()
-                      << ", angle="     << angle
-                      << ", xF="        << xF
-                      << ", bend="      << px/pz
-                      << ", dimuon_pz=" << muon1.Pz() + pz << std::endl;
+                      << ", pz="    << pz
+                      << ", angle=" << angle
+                      << ", xF="    << xF
+                      << ", bend="  << px/pz << std::endl;
             return false;
         }
     }
     return true;
 }
+
+
+
 
 bool PHG4E1039TrackPairGen::GenerateMomentumWithExpPDF(int muon_counter, double &px, double &py, double &pz) {
     if (!_hMomentumMap) {

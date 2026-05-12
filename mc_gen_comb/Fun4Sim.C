@@ -102,12 +102,21 @@ int Fun4Sim(const int nevent = 10)
 		}
 	if(gen_particle_with_exp_pdf) comb->SetExpPDFMode(true);
     else{
-		comb->set_par1_pxpypz_range(-6.0,6.0, -4,4, 15,80);
-		comb->set_par2_pxpypz_range(-6.0,6.0, -4,4, 15,80);
-		comb->set_max_opening_angle(5);
-        comb->set_bend_range(-0.15, 0.0,   // mu+: lo, hi
-                              0.0,  0.15); // mu-: lo, hi
-	}
+		comb->set_par1_pxpypz_range(-6.0,6.0, -4,4, 15,75);
+		comb->set_par2_pxpypz_range(-6.0,6.0, -4,4, 15,75);
+		comb->set_max_opening_angle(10);
+        comb->set_bend_range(-0.10, 0.05,   // mu+: lo, hi
+                              0.02,  0.15); // mu-: lo, hi	
+
+		comb->set_gaus_params_pos(-0.75, 0.6,   // px: shift mean left, narrow sigma
+                           0.0, 0.8,   // py: mean~0, sigma~0.8
+                          40.0, 12.0); // pz: keep similar
+
+		comb->set_gaus_params_neg( 1.0, 0.6,   // px: shift mean to +0.5, MUCH narrower sigma
+                           0.0, 0.8,   // py: fix sigma from 0.15 to 0.8!
+                          40.0, 12.0); // pz: keep similar
+
+			}
         //comb->Verbosity(1);
 		se->registerSubsystem(comb);
 

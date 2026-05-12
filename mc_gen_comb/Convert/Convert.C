@@ -23,7 +23,8 @@ T FirstByCharge(const std::vector<T>& values,
 
 void Convert() {
   //std::string infile   = "../mc_comb_feb_15_tune2.root";
-  std::string infile   = "../MC_comb_2_8GeV_Feb20.root";
+  //std::string infile   = "../MC_comb_2_8GeV_Feb20.root";
+  std::string infile   = "../MC_Comb_angle_10_Mar19.root";
   std::string treename = "tree";
 
   ROOT::RDataFrame df(treename, infile);
@@ -114,6 +115,6 @@ void Convert() {
   };
 
   auto df3 = df2.Filter("mass > 1.5 && mass < 8.0");
-  df3.Snapshot("tree", "MC_comb_2_8GeV_Feb20.root", outBranches);
+  df3.Snapshot("tree", "MC_Comb_angle_10_Mar19.root", outBranches);
 }
 

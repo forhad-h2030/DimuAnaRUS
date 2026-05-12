@@ -26,7 +26,8 @@ void write() {
   //std::string infile   = "../MC_DY_Pythia8_Mass1_8_legacy.root";
   //std::string infile   = "../MC_DY_Pythia8_Mass0.5_2.5.root";
   //std::string infile   = "../MC_DY_Pythia8_Mass0.5_6.0.root";
-  std::string infile   = "../MC_DY_Feb22.root";
+  //std::string infile   = "../MC_DY_Feb22.root";
+  std::string infile   = "../MC_DY_Pythia8_Target_April_1.root";
   std::string treename = "tree";
 
   ROOT::RDataFrame df(treename, infile);
@@ -106,7 +107,7 @@ void write() {
     "mass"
   };
 
-  auto df3 = df2.Filter("mass > 1.0 && mass < 8.0");
-  df3.Snapshot("tree", "MC_DY_Feb22.root.root", outBranches);
+  auto df3 = df2.Filter("mass > 1.5 && mass < 6.0");
+  df3.Snapshot("tree", "MC_DY_Pythia8_Target_April_1.root", outBranches);
 }
 

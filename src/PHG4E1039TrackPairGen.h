@@ -79,6 +79,26 @@ public:
   bool gen_with_exp_pdf;
   void SetExpPDFMode(bool enable) { gen_with_exp_pdf = enable; }
 
+
+  // In header
+void set_gaus_params_pos(double mean_px, double sigma_px,
+                         double mean_py, double sigma_py,
+                         double mean_pz, double sigma_pz) {
+    _mean_px_pos = mean_px; _sigma_px_pos = sigma_px;
+    _mean_py_pos = mean_py; _sigma_py_pos = sigma_py;
+    _mean_pz_pos = mean_pz; _sigma_pz_pos = sigma_pz;
+}
+
+void set_gaus_params_neg(double mean_px, double sigma_px,
+                         double mean_py, double sigma_py,
+                         double mean_pz, double sigma_pz) {
+    _mean_px_neg = mean_px; _sigma_px_neg = sigma_px;
+    _mean_py_neg = mean_py; _sigma_py_neg = sigma_py;
+    _mean_pz_neg = mean_pz; _sigma_pz_neg = sigma_pz;
+}
+
+
+
   //!
   void set_pxpypz_range(
   		const double x_min, const double x_max,
@@ -159,6 +179,16 @@ private:
   double _px_par2_min, _px_par2_max;
   double _py_par2_min, _py_par2_max;
   double _pz_par2_min, _pz_par2_max;
+
+
+
+  double _mean_px_pos, _sigma_px_pos;  
+  double _mean_py_pos, _sigma_py_pos;  
+  double _mean_pz_pos, _sigma_pz_pos;  
+  double _mean_px_neg, _sigma_px_neg;  
+  double _mean_py_neg, _sigma_py_neg;  
+  double _mean_pz_neg, _sigma_pz_neg;  
+
 
   double _theta_min, _theta_max, _theta_mu_max;
   int    _eventcount;

@@ -48,8 +48,7 @@ int Fun4Sim(const int nevent = 10)
 	const bool gen_cosmic   = false;
 	const bool gen_particle = false;
 	const bool read_hepmc   = false;
-	const bool gen_e906dim =  false; // cf. SQPrimaryParticleGen
-
+	const bool gen_e906dim =  false; // cf. SQPrimaryParticleG
 	//! Use SQPrimaryVertexGen or not.
 	const bool SQ_vtx_gen = true;
 
@@ -187,7 +186,7 @@ int Fun4Sim(const int nevent = 10)
 
 		if(drellyan_gen){
 			e906legacy->set_xfRange(-0.5, 1.0); //[-1.,1.]
-			e906legacy->set_massRange(0.3, 4.0);
+			e906legacy->set_massRange(8.0, 10.0);
 			e906legacy->enableDrellYanGen();
 		}
 		if(Psip_gen){ 
@@ -259,15 +258,12 @@ int Fun4Sim(const int nevent = 10)
         //se->registerSubsystem(muon_filter);
 	/// Save only events that are in the geometric acceptance.
 
-    /*
 	SQGeomAcc* geom_acc = new SQGeomAcc();
 	geom_acc->SetMuonMode(SQGeomAcc::PAIR); // PAIR, PAIR_TBBT, SINGLE, SINGLE_T, etc.
 	//geom_acc->SetMuonMode(SQGeomAcc::PAIR_TBBT); // PAIR, PAIR_TBBT, SINGLE, SINGLE_T, etc.
 	geom_acc->SetPlaneMode(SQGeomAcc::HODO_CHAM); // HODO, CHAM or HODO_CHAM
 	geom_acc->SetNumOfH1EdgeElementsExcluded(4); // Exclude 4 elements at H1 edges
 	se->registerSubsystem(geom_acc);
-
-    */
 
 	// Make SQ nodes for truth info
 	se->registerSubsystem(new TruthNodeMaker());
@@ -296,7 +292,7 @@ int Fun4Sim(const int nevent = 10)
 	//se->registerSubsystem(evt_filter);
 	// Tracking module
 	// input - we need a dummy to drive the event loop
-/*
+
 	SQReco* reco = new SQReco();
 	reco->Verbosity(1);
 	reco->set_legacy_rec_container(false); 
@@ -313,7 +309,6 @@ int Fun4Sim(const int nevent = 10)
 	SQVertexing* vtx = new SQVertexing();
 	vtx->Verbosity(1);
 	se->registerSubsystem(vtx);
-*/
 
 	if(read_hepmc) {
 		Fun4AllHepMCInputManager *in = new Fun4AllHepMCInputManager("HEPMCIN");
@@ -330,10 +325,10 @@ int Fun4Sim(const int nevent = 10)
 	// Output
 	///////////////////////////////////////////
 
-    Fun4AllRUSOutputManager* tree = new Fun4AllRUSOutputManager();
-    tree->SetTreeName("tree");
-    tree->SetFileName("RUS_out.root");
-    se->registerOutputManager(tree);
+    //Fun4AllRUSOutputManager* tree = new Fun4AllRUSOutputManager();
+    //tree->SetTreeName("tree");
+    //tree->SetFileName("RUS_out.root");
+    //se->registerOutputManager(tree);
 
 	// DST output manager
     //Fun4AllDstOutputManager *out = new Fun4AllDstOutputManager("DSTOUT", "DST.root");
@@ -344,7 +339,6 @@ int Fun4Sim(const int nevent = 10)
 	//  out->set_embedding_id(1);
 	//  se->registerOutputManager(out);
 	//}
-    /*
 	DimuAnaRUS* dimuAna = new DimuAnaRUS();
     dimuAna->SetTreeName("tree");
 	dimuAna->SetMCTrueMode(true);
@@ -354,8 +348,7 @@ int Fun4Sim(const int nevent = 10)
     dimuAna->SetRecoDimuMode(true);
     dimuAna->EnableSQHit(true);
     se->registerSubsystem(dimuAna);
-*/
-	const bool count_only_good_events = false;
+	const bool count_only_good_events = true;
 	se->run(nevent, count_only_good_events);
 	PHGeomUtility::ExportGeomtry(se->topNode(),"geom.root");
 
