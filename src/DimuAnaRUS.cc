@@ -21,6 +21,9 @@
 #include <phool/PHIODataNode.h>
 #include <phool/getClass.h>
 #include <geom_svc/GeomSvc.h>
+#include <UtilAna/UtilTrack.h>
+#include <UtilAna/UtilTrigger.h>
+#include <UtilAna/TrigRoadset.h>
 #include "DimuAnaRUS.h"
 using namespace std;
 
@@ -254,7 +257,7 @@ int DimuAnaRUS::InitRun(PHCompositeNode* startNode)
 		if (ret != 0) {
 			cout << "!!WARNING!!  OnlMonTrigEP::InitRunOnlMon():  roadset.LoadConfig returned " << ret << ".\n";
 		}
-		//cout <<"Roadset " << m_rs.str(1) << endl;
+		cout <<"MC trigger roadset 131 loaded: " << m_rs.str(1) << endl;
 	}
 	return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -492,12 +495,36 @@ int index = -1;
 
 		if(reco_dimu_mode==true){
 			ResetRecoDimuBranches();
+			int n_dimu_pass_trig = 0;
 			for (auto it = m_sq_dim_vec->begin(); it != m_sq_dim_vec->end(); it++) {
 				SRecDimuon& sdim = dynamic_cast<SRecDimuon&>(**it);
 				int trk_id_pos = sdim.get_track_id_pos();
 				int trk_id_neg = sdim.get_track_id_neg();
 				SRecTrack& trk_pos = dynamic_cast<SRecTrack&>(*(m_sq_trk_vec->at(trk_id_pos)));
 				SRecTrack& trk_neg = dynamic_cast<SRecTrack&>(*(m_sq_trk_vec->at(trk_id_neg)));
+
+				// Trigger emulation: require matched roads in opposite top/bottom halves
+				if (reco_mode && (data_trig_mode || mc_trig_mode)) {
+					std::vector<int> list_road_pos = UtilTrack::FindMatchedRoads(&trk_pos);
+					std::vector<int> list_road_neg = UtilTrack::FindMatchedRoads(&trk_neg);
+					std::vector<int> list_road_pt = m_rs.PosTop()->FindRoadIDs(list_road_pos);
+					std::vector<int> list_road_pb = m_rs.PosBot()->FindRoadIDs(list_road_pos);
+					std::vector<int> list_road_nt = m_rs.NegTop()->FindRoadIDs(list_road_neg);
+					std::vector<int> list_road_nb = m_rs.NegBot()->FindRoadIDs(list_road_neg);
+					bool pass_trig = (list_road_pt.size()>0 && list_road_nb.size()>0) ||
+					                 (list_road_pb.size()>0 && list_road_nt.size()>0);
+					static int n_trig_print = 0;
+					if (n_trig_print < 20) { 
+						++n_trig_print;
+						cout << "TrigEmu: evt " << m_evt->get_event_id()
+						     << " matched roads pos/neg = " << list_road_pos.size() << "/" << list_road_neg.size()
+						     << "  PT/PB/NT/NB = " << list_road_pt.size() << "/" << list_road_pb.size()
+						     << "/" << list_road_nt.size() << "/" << list_road_nb.size()
+						     << "  pass = " << pass_trig << endl;
+					}
+					if (!pass_trig) continue;
+				}
+				++n_dimu_pass_trig;
 
 
 				//--------
@@ -589,7 +616,9 @@ int index = -1;
 
 				TLorentzVector mom_tgt = sdim.p_pos_target + sdim.p_neg_target;
 				rec_dimuon_mass_tgt.push_back(mom_tgt.M());
-			}		
+			}
+			// Drop the event (no tree entry) if no dimuon passes the trigger emulation
+			if ((data_trig_mode || mc_trig_mode) && n_dimu_pass_trig == 0) return Fun4AllReturnCodes::EVENT_OK;
 		}
 	}
 	m_tree->Fill();
