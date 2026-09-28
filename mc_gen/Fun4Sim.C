@@ -259,7 +259,7 @@ int Fun4Sim(const int nevent = 10)
 	/// Save only events that are in the geometric acceptance.
 
 	SQGeomAcc* geom_acc = new SQGeomAcc();
-	geom_acc->SetMuonMode(SQGeomAcc::PAIR); // PAIR, PAIR_TBBT, SINGLE, SINGLE_T, etc.
+	geom_acc->SetMuonMode(SQGeomAcc::PAIR_TBBT); // PAIR, PAIR_TBBT, SINGLE, SINGLE_T, etc.
 	//geom_acc->SetMuonMode(SQGeomAcc::PAIR_TBBT); // PAIR, PAIR_TBBT, SINGLE, SINGLE_T, etc.
 	geom_acc->SetPlaneMode(SQGeomAcc::HODO_CHAM); // HODO, CHAM or HODO_CHAM
 	geom_acc->SetNumOfH1EdgeElementsExcluded(4); // Exclude 4 elements at H1 edges
@@ -345,6 +345,7 @@ int Fun4Sim(const int nevent = 10)
     dimuAna->SetOutputFileName("RUS.root");
     dimuAna->SetSaveOnlyDimuon(true);
     dimuAna->SetRecoMode(true);
+    dimuAna->SetMCTriggerEmu(true);
     dimuAna->SetRecoDimuMode(true);
     dimuAna->EnableSQHit(true);
     se->registerSubsystem(dimuAna);
