@@ -170,7 +170,8 @@ int Fun4Sim(const int nevent = 10)
         //se->registerSubsystem(muon_filter);
 	/// Save only events that are in the geometric acceptance.
 	SQGeomAcc* geom_acc = new SQGeomAcc();
-	geom_acc->SetMuonMode(SQGeomAcc::PAIR); // PAIR, PAIR_TBBT, SINGLE, SINGLE_T, etc.
+	//geom_acc->SetMuonMode(SQGeomAcc::PAIR); // PAIR, PAIR_TBBT, SINGLE, SINGLE_T, etc.
+    geom_acc->SetMuonMode(SQGeomAcc::PAIR_TBBT);
 	geom_acc->SetPlaneMode(SQGeomAcc::HODO_CHAM); // HODO, CHAM or HODO_CHAM
 	geom_acc->SetNumOfH1EdgeElementsExcluded(4); // Exclude 4 elements at H1 edges
 	se->registerSubsystem(geom_acc);
@@ -238,6 +239,7 @@ int Fun4Sim(const int nevent = 10)
     dimuAna->SetSaveOnlyDimuon(true);
     dimuAna->SetRecoMode(true);
     dimuAna->SetRecoDimuMode(true);
+    dimuAna->SetMCTriggerEmu(true);
     dimuAna->EnableSQHit(false);
 	dimuAna->SetProcessId(15);
     se->registerSubsystem(dimuAna);
