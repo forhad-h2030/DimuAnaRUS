@@ -44,11 +44,11 @@ int Fun4Sim(const int nevent = 10)
 	const double KMAGSTR = -1.025;
 
 	//! Particle generator flag.  Only one of these must be true.
-	const bool gen_pythia8  = true;
+	const bool gen_pythia8  = false;
 	const bool gen_cosmic   = false;
 	const bool gen_particle = false;
 	const bool read_hepmc   = false;
-	const bool gen_e906dim =  false; // cf. SQPrimaryParticleG
+	const bool gen_e906dim =  true; // cf. SQPrimaryParticleG
 	//! Use SQPrimaryVertexGen or not.
 	const bool SQ_vtx_gen = true;
 
@@ -186,7 +186,7 @@ int Fun4Sim(const int nevent = 10)
 
 		if(drellyan_gen){
 			e906legacy->set_xfRange(-0.5, 1.0); //[-1.,1.]
-			e906legacy->set_massRange(8.0, 10.0);
+			e906legacy->set_massRange(0.25, 10.0);
 			e906legacy->enableDrellYanGen();
 		}
 		if(Psip_gen){ 
@@ -341,13 +341,13 @@ int Fun4Sim(const int nevent = 10)
 	//}
 	DimuAnaRUS* dimuAna = new DimuAnaRUS();
     dimuAna->SetTreeName("tree");
-	dimuAna->SetMCTrueMode(true);
+	dimuAna->SetMCTrueMode(false);
     dimuAna->SetOutputFileName("RUS.root");
     dimuAna->SetSaveOnlyDimuon(true);
     dimuAna->SetRecoMode(true);
     dimuAna->SetMCTriggerEmu(true);
     dimuAna->SetRecoDimuMode(true);
-    dimuAna->EnableSQHit(true);
+    dimuAna->EnableSQHit(false);
     se->registerSubsystem(dimuAna);
 	const bool count_only_good_events = true;
 	se->run(nevent, count_only_good_events);

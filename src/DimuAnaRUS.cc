@@ -80,7 +80,7 @@ int DimuAnaRUS::InitRun(PHCompositeNode* startNode)
 	m_tree->Branch("eventID", &eventID, "eventID/I");
 	m_tree->Branch("runID", &runID, "runID/I");
 	m_tree->Branch("spillID", &spillID, "spillID/I");
-	m_tree->Branch("eventID", &eventID, "eventID/I");
+	m_tree->Branch("weight", &weight, "weight/D");
 	m_tree->Branch("rfID", &rfID, "rfID/I");
 	m_tree->Branch("turnID", &turnID, "turnID/I");
 	m_tree->Branch("rfIntensity", rfIntensity, "rfIntensity[33]/I");
@@ -123,6 +123,7 @@ int DimuAnaRUS::InitRun(PHCompositeNode* startNode)
 }
 
 	if (reco_mode==true){
+        if (!saveDimuonOnly) { // reco track branches
         m_tree->Branch("rec_track_id",             &rec_track_id);
         m_tree->Branch("rec_track_charge",         &rec_track_charge);
         m_tree->Branch("rec_track_vx",             &rec_track_vx);
@@ -163,6 +164,7 @@ int DimuAnaRUS::InitRun(PHCompositeNode* startNode)
         m_tree->Branch("rec_hit_ids",              &rec_hit_ids);
         m_tree->Branch("rec_track_hit_x",              &rec_track_hit_x);
         m_tree->Branch("rec_track_hit_y",              &rec_track_hit_y);
+        }
 
 
         if (reco_dimu_mode == true) {
@@ -199,11 +201,28 @@ int DimuAnaRUS::InitRun(PHCompositeNode* startNode)
         m_tree->Branch("rec_dimuon_py_neg_dump", &rec_dimuon_py_neg_dump);
         m_tree->Branch("rec_dimuon_pz_neg_dump", &rec_dimuon_pz_neg_dump);
 
-
         m_tree->Branch("rec_dimuon_mass_tgt", &rec_dimuon_mass_tgt);
+
+        // track vertex positions of the two muons
+        m_tree->Branch("rec_dimuon_x_pos_vtx", &rec_dimuon_x_pos_vtx);
+        m_tree->Branch("rec_dimuon_y_pos_vtx", &rec_dimuon_y_pos_vtx);
+        m_tree->Branch("rec_dimuon_z_pos_vtx", &rec_dimuon_z_pos_vtx);
+
+        // station-1 x/y of the two muons
+        m_tree->Branch("rec_dimuon_x_pos_st1", &rec_dimuon_x_pos_st1);
+        m_tree->Branch("rec_dimuon_y_pos_st1", &rec_dimuon_y_pos_st1);
+        m_tree->Branch("rec_dimuon_x_neg_st1", &rec_dimuon_x_neg_st1);
+        m_tree->Branch("rec_dimuon_y_neg_st1", &rec_dimuon_y_neg_st1);
+
+        m_tree->Branch("rec_dimuon_x_neg_vtx", &rec_dimuon_x_neg_vtx);
+        m_tree->Branch("rec_dimuon_y_neg_vtx", &rec_dimuon_y_neg_vtx);
+        m_tree->Branch("rec_dimuon_z_neg_vtx", &rec_dimuon_z_neg_vtx);
 
         }
 	}
+
+	// The MC event node gives the event weight; it is optional unless true_mode needs it
+	m_evt_true = findNode::getClass<SQMCEvent>(startNode, "SQMCEvent");
 
 	if (true_mode) {
 		m_vec_trk = findNode::getClass<SQTrackVector>(startNode, "SQTruthTrackVector");
@@ -268,7 +287,7 @@ int DimuAnaRUS::process_event(PHCompositeNode* startNode)
 
 	int proc_id=0;
 	int SourceFlag=0;
-	int true_proc = m_evt_true->get_process_id();
+	int true_proc = m_evt_true ? m_evt_true->get_process_id() : 0;
 	//cout <<" true process id "<< true_proc <<endl;
 	/*   //if (! m_evt->get_trigger(SQEvent::MATRIX1)) {
 	   if (! m_evt->get_trigger(SQEvent::NIM4)) {
@@ -280,6 +299,7 @@ int DimuAnaRUS::process_event(PHCompositeNode* startNode)
 	//}
  
 	   eventID = m_evt->get_event_id();
+	   weight = m_evt_true ? m_evt_true->get_weight() : 1.0;
 	   runID = m_evt->get_run_id();
 	   spillID = m_evt->get_spill_id();
 	   rfID = m_evt->get_qie_rf_id();
@@ -417,6 +437,7 @@ int index = -1;
 	if(reco_mode == true){
 		ResetRecoBranches();
 
+		if (!saveDimuonOnly) { // fill reco track branches
 		for (auto it = m_sq_trk_vec->begin(); it != m_sq_trk_vec->end(); ++it) {
 			index+=1;
 			SRecTrack* trk = dynamic_cast<SRecTrack*>(*it);
@@ -492,6 +513,7 @@ int index = -1;
 			rec_track_hit_x.push_back(hit_ids_pos_x);
 			rec_track_hit_y.push_back(hit_ids_pos_y);
 		}
+		}
 
 		if(reco_dimu_mode==true){
 			ResetRecoDimuBranches();
@@ -502,6 +524,39 @@ int index = -1;
 				int trk_id_neg = sdim.get_track_id_neg();
 				SRecTrack& trk_pos = dynamic_cast<SRecTrack&>(*(m_sq_trk_vec->at(trk_id_pos)));
 				SRecTrack& trk_neg = dynamic_cast<SRecTrack&>(*(m_sq_trk_vec->at(trk_id_neg)));
+
+				// --- Cut: z vertex > -690 cm (both track vertices) ---
+				if (trk_pos.get_pos_vtx().Z() < -690.) continue;
+				if (trk_neg.get_pos_vtx().Z() < -690.) continue;
+
+				// --- Cut: |y_st1| > 3 cm (both tracks) ---
+				if (fabs(trk_pos.get_pos_st1().Y()) < 3.) continue;
+				if (fabs(trk_neg.get_pos_st1().Y()) < 3.) continue;
+
+				// --- Cut: chi2 — all hypotheses valid, target must be the best ---
+				double chisq_target_pos   = trk_pos.getChisqTarget();
+				double chisq_dump_pos     = trk_pos.get_chisq_dump();
+				double chisq_upstream_pos = trk_pos.get_chisq_upstream();
+				double chisq_target_neg   = trk_neg.getChisqTarget();
+				double chisq_dump_neg     = trk_neg.get_chisq_dump();
+				double chisq_upstream_neg = trk_neg.get_chisq_upstream();
+				bool pass_chisq_cut =
+					(chisq_target_pos   >= 0 &&
+					 chisq_dump_pos     >= 0 &&
+					 chisq_upstream_pos >= 0 &&
+					 (chisq_target_pos - chisq_dump_pos)     <= 0 &&
+					 (chisq_target_pos - chisq_upstream_pos) <= 0 &&
+					 chisq_target_neg   >= 0 &&
+					 chisq_dump_neg     >= 0 &&
+					 chisq_upstream_neg >= 0 &&
+					 (chisq_target_neg - chisq_dump_neg)     <= 0 &&
+					 (chisq_target_neg - chisq_upstream_neg) <= 0);
+				if (!pass_chisq_cut) continue;
+
+				// --- Target hypothesis & mass > 0 ---
+				sdim.calcVariables(1); // 1 = target
+				if ((sdim.p_pos_target + sdim.p_neg_target).M() <= 0.) continue;
+
 
 				// Trigger emulation: require matched roads in opposite top/bottom halves
 				if (reco_mode && (data_trig_mode || mc_trig_mode)) {
@@ -514,7 +569,7 @@ int index = -1;
 					bool pass_trig = (list_road_pt.size()>0 && list_road_nb.size()>0) ||
 					                 (list_road_pb.size()>0 && list_road_nt.size()>0);
 					static int n_trig_print = 0;
-					if (n_trig_print < 20) { 
+					if (n_trig_print < 20) { // sanity check on the first dimuons only
 						++n_trig_print;
 						cout << "TrigEmu: evt " << m_evt->get_event_id()
 						     << " matched roads pos/neg = " << list_road_pos.size() << "/" << list_road_neg.size()
