@@ -2,7 +2,6 @@
 #define _DIMU_ANA_RUS_H_
 #include <fun4all/SubsysReco.h>
 #include <UtilAna/TrigRoadset.h>
-#include <unordered_map>
 
 
 class TFile;
@@ -15,7 +14,6 @@ class SQTrackVector;
 class SQDimuonVector;
 class SQMCEvent;
 class TrackletVector;
-class SQHit;
 
 class DimuAnaRUS: public SubsysReco {
 	SQEvent* m_evt;
@@ -40,7 +38,6 @@ class DimuAnaRUS: public SubsysReco {
 	bool reco_mode;
 	bool data_trig_mode;
 	bool mc_trig_mode;
-	bool saveDimuonOnly;
 	bool true_dimu_mode;
 	int proc_id;
 	int SourceFlag;
@@ -53,21 +50,18 @@ class DimuAnaRUS: public SubsysReco {
 	void SetRecoDimuMode(bool enable) { reco_dimu_mode = enable; }
 	void SetDataTriggerEmu(bool enable) { 
 		data_trig_mode = enable; 
-		mc_trig_mode = !enable; // Automatically disable mc_trig_mode when data_trig_mode is enabled
+		if (enable) mc_trig_mode = false; // the two modes are mutually exclusive; disabling one leaves both off
 	}   
 
 	void SetMCTriggerEmu(bool enable) { 
 		mc_trig_mode = enable; 
-		data_trig_mode = !enable; // Automatically disable data_trig_mode when mc_trig_mode is enabled
+		if (enable) data_trig_mode = false; // the two modes are mutually exclusive; disabling one leaves both off
 	}   
 
-	void SetSaveOnlyDimuon(bool enable) { saveDimuonOnly = enable; }
 	void SetSourceFlag(int flag) { SourceFlag = flag; }
 	void SetProcessId(int proc_id_) { proc_id = proc_id_; }
 
 
-    std::pair<int, int> GetDetElemIDFromHitID(int hit_id) const;
-    std::pair<int, int> GetDetElemIDFromHitID(int hit_id, const std::unordered_map<int, SQHit*>& hit_map) const;
 
 
 	unsigned int EncodeProcess(int processID, int sourceFlag);
@@ -85,22 +79,24 @@ class DimuAnaRUS: public SubsysReco {
 
 	void SetTreeName(const std::string& name) { m_tree_name = name; }
 	void SetFileName(const std::string& name) { m_file_name = name; }
+	static double GetPtReWeight(double pT, double xF, double mass);
 	void ResetHitBranches();
 	void ResetTrueBranches();
-	void ResetRecoBranches();
 	void ResetRecoDimuBranches();
 
 	private:
 
 	// Scalar variables
 	int eventID;
+	double weight;
 	int spillID;
 	int runID;
-	int rfID;
-	int turnID;
-	int rfIntensity[33];
-	int fpgaTrigger[5] = {0};
-	int nimTrigger[5] = {0};
+	int evtPassTrigEmu = 0; // 1 if any reco dimuon passes the trigger emulation
+	std::vector<int> rec_dimuon_pass_trig; // per-dimuon trigger emulation result
+
+	// True dimuon (first one in SQTruthDimuonVector)
+	double true_dimuon_mass, true_dimuon_pT, true_dimuon_xF;
+	double ptReWeight;
 
 	std::vector<int> hitID;
 	std::vector<int> processID;
@@ -132,8 +128,6 @@ class DimuAnaRUS: public SubsysReco {
     rec_dimuon_px_neg, rec_dimuon_py_neg, rec_dimuon_pz_neg,
     rec_dimuon_px_pos_tgt, rec_dimuon_py_pos_tgt, rec_dimuon_pz_pos_tgt,
     rec_dimuon_px_neg_tgt, rec_dimuon_py_neg_tgt, rec_dimuon_pz_neg_tgt,
-    rec_dimuon_px_pos_dump, rec_dimuon_py_pos_dump, rec_dimuon_pz_pos_dump,
-    rec_dimuon_px_neg_dump, rec_dimuon_py_neg_dump, rec_dimuon_pz_neg_dump,
     rec_dimuon_mass_tgt,
     rec_dimuon_x_pos_vtx, rec_dimuon_y_pos_vtx, rec_dimuon_z_pos_vtx,
     rec_dimuon_px_pos_vtx, rec_dimuon_py_pos_vtx, rec_dimuon_pz_pos_vtx,
@@ -149,26 +143,6 @@ class DimuAnaRUS: public SubsysReco {
     rec_dimuon_px_neg_st3, rec_dimuon_py_neg_st3, rec_dimuon_pz_neg_st3;
 
 
-	std::vector<int>
-    rec_track_id,
-    rec_track_charge,
-    rec_track_num_hits;
-	std::vector<std::vector<int>> rec_hit_ids;
-	std::vector<std::vector<double>> rec_track_hit_x;
-	std::vector<std::vector<double>> rec_track_hit_y;
-
-	std::vector<double>
-    rec_track_vx, rec_track_vy, rec_track_vz,
-    rec_track_px, rec_track_py, rec_track_pz,
-    rec_track_x_st1, rec_track_y_st1, rec_track_z_st1,
-    rec_track_px_st1, rec_track_py_st1, rec_track_pz_st1,
-    rec_track_x_st3, rec_track_y_st3, rec_track_z_st3,
-    rec_track_px_st3, rec_track_py_st3, rec_track_pz_st3,
-    rec_track_chisq, rec_track_chisq_tgt, rec_track_chisq_dump, rec_track_chisq_upstream,
-    rec_track_x_tgt, rec_track_y_tgt, rec_track_z_tgt,
-    rec_track_px_tgt, rec_track_py_tgt, rec_track_pz_tgt,
-    rec_track_x_dump, rec_track_y_dump, rec_track_z_dump,
-    rec_track_px_dump, rec_track_py_dump, rec_track_pz_dump;
 };
 
 #endif // _DimuAnaRUS.h_

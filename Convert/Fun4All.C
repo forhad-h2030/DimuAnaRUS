@@ -22,7 +22,6 @@ int Fun4All(const string DST_in, const string DST_out, const int n_evt=0){
         dimuAna->SetTreeName("tree");
 	dimuAna->SetMCTrueMode(false);
         dimuAna->SetOutputFileName("RUS.root");
-        dimuAna->SetSaveOnlyDimuon(false);
         dimuAna->SetRecoMode(false);
         se->registerSubsystem(dimuAna);
 

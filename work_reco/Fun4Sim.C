@@ -74,7 +74,6 @@ int Fun4Sim(const string Vect_in, const string DST_out, const int n_evt=20){
 	dimuAna->SetOutputFileName(DST_out);
 	//dimuAna->SetMCTrueMode(true);
 	dimuAna->SetDataTriggerEmu(false); 
-	dimuAna->SetSaveOnlyDimuon(true);
 	dimuAna->SetRecoMode(true);
 	se->registerSubsystem(dimuAna);
 	//se->registerSubsystem(new DimuAnaRUS());

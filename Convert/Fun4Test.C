@@ -35,7 +35,6 @@ int Fun4Test(){
 	dimuAna->SetTreeName("tree");
 	dimuAna->SetMCTrueMode(false);
 	dimuAna->SetRecoMode("false");
-	dimuAna->SetSaveOnlyDimuon(false);
 	dimuAna->SetOutputFileName("run_006036_spill_001927096.root");
 	se->registerSubsystem(dimuAna);
 

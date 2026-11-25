@@ -343,7 +343,6 @@ int Fun4Sim(const int nevent = 10)
     dimuAna->SetTreeName("tree");
 	dimuAna->SetMCTrueMode(false);
     dimuAna->SetOutputFileName("RUS.root");
-    dimuAna->SetSaveOnlyDimuon(true);
     dimuAna->SetRecoMode(true);
     dimuAna->SetMCTriggerEmu(true);
     dimuAna->SetRecoDimuMode(true);

@@ -345,7 +345,6 @@ int Fun4SimRUS(const int nevent = 10)
     dimuAna->SetTreeName("tree");
 	dimuAna->SetMCTrueMode(true);
     dimuAna->SetOutputFileName("RUS.root");
-    dimuAna->SetSaveOnlyDimuon(true);
     dimuAna->SetRecoMode(true);
     dimuAna->SetRecoDimuMode(true);
     dimuAna->EnableSQHit(true);

@@ -20,12 +20,31 @@
 #include <phool/PHNodeIterator.h>
 #include <phool/PHIODataNode.h>
 #include <phool/getClass.h>
-#include <geom_svc/GeomSvc.h>
 #include <UtilAna/UtilTrack.h>
+#include <UtilAna/UtilDimuon.h>
 #include <UtilAna/UtilTrigger.h>
 #include <UtilAna/TrigRoadset.h>
 #include "DimuAnaRUS.h"
 using namespace std;
+
+/// DY pT reweight, cf. GetPtReWeight() in e906-gmc-reco/inc/Common.h (target dependence dropped)
+double DimuAnaRUS::GetPtReWeight(double pT, double xF, double mass)
+{
+  const double P = 120.0;
+  const double M = 0.938;
+  const double S = 2*M*M + 2*M*sqrt(P*P+M*M);
+  const double p1_old = 2.8;
+
+  double tau = mass*mass/S;
+  double pTsqMax = S/4 * (1-tau)*(1-tau)*(1-xF*xF);
+  if (pTsqMax < 0.09) return 1.0;
+
+  const double p1_new = 2.411 - 0.7658 * fabs(xF);
+
+  double f_old = pow(1+pT*pT/p1_old/p1_old, 6) * p1_old*p1_old * (1 - pow(1 + pTsqMax/p1_old/p1_old, -5));
+  double f_new = pow(1+pT*pT/p1_new/p1_new, 6) * p1_new*p1_new * (1 - pow(1 + pTsqMax/p1_new/p1_new, -5));
+  return f_old / f_new;
+}
 
 DimuAnaRUS::DimuAnaRUS(const std::string& name)
   : SubsysReco  (name),
@@ -38,7 +57,7 @@ DimuAnaRUS::DimuAnaRUS(const std::string& name)
     m_hit_vec(0),
     m_sq_trk_vec(0),
     m_sq_dim_vec(0),
-    saveDimuonOnly(false),
+    sqhit_flag(false),
     true_mode(false),
     reco_dimu_mode(false),
     reco_mode(false),
@@ -81,11 +100,7 @@ int DimuAnaRUS::InitRun(PHCompositeNode* startNode)
 	m_tree->Branch("runID", &runID, "runID/I");
 	m_tree->Branch("spillID", &spillID, "spillID/I");
 	m_tree->Branch("weight", &weight, "weight/D");
-	m_tree->Branch("rfID", &rfID, "rfID/I");
-	m_tree->Branch("turnID", &turnID, "turnID/I");
-	m_tree->Branch("rfIntensity", rfIntensity, "rfIntensity[33]/I");
-	m_tree->Branch("fpgaTrigger", fpgaTrigger, "fpgaTrigger[5]/I");
-	m_tree->Branch("nimTrigger", nimTrigger, "nimTrigger[5]/I");
+	m_tree->Branch("evtPassTrigEmu", &evtPassTrigEmu, "evtPassTrigEmu/I");
 
     if(sqhit_flag){
         m_tree->Branch("hitID", &hitID);
@@ -98,6 +113,10 @@ int DimuAnaRUS::InitRun(PHCompositeNode* startNode)
     }
 
 	if (true_mode) {
+        m_tree->Branch("true_dimuon_mass", &true_dimuon_mass, "true_dimuon_mass/D");
+        m_tree->Branch("true_dimuon_pT", &true_dimuon_pT, "true_dimuon_pT/D");
+        m_tree->Branch("true_dimuon_xF", &true_dimuon_xF, "true_dimuon_xF/D");
+        m_tree->Branch("ptReWeight", &ptReWeight, "ptReWeight/D");
         m_tree->Branch("gCharge", &gCharge);
         m_tree->Branch("gTrackID", &gTrackID);
         m_tree->Branch("gvx", &gvx);
@@ -123,48 +142,6 @@ int DimuAnaRUS::InitRun(PHCompositeNode* startNode)
 }
 
 	if (reco_mode==true){
-        if (!saveDimuonOnly) { // reco track branches
-        m_tree->Branch("rec_track_id",             &rec_track_id);
-        m_tree->Branch("rec_track_charge",         &rec_track_charge);
-        m_tree->Branch("rec_track_vx",             &rec_track_vx);
-        m_tree->Branch("rec_track_vy",             &rec_track_vy);
-        m_tree->Branch("rec_track_vz",             &rec_track_vz);
-        m_tree->Branch("rec_track_px",             &rec_track_px);
-        m_tree->Branch("rec_track_py",             &rec_track_py);
-        m_tree->Branch("rec_track_pz",             &rec_track_pz);
-        m_tree->Branch("rec_track_x_st1",          &rec_track_x_st1);
-        m_tree->Branch("rec_track_y_st1",          &rec_track_y_st1);
-        m_tree->Branch("rec_track_z_st1",          &rec_track_z_st1);
-        m_tree->Branch("rec_track_px_st1",         &rec_track_px_st1);
-        m_tree->Branch("rec_track_py_st1",         &rec_track_py_st1);
-        m_tree->Branch("rec_track_pz_st1",         &rec_track_pz_st1);
-        m_tree->Branch("rec_track_x_st3",          &rec_track_x_st3);
-        m_tree->Branch("rec_track_y_st3",          &rec_track_y_st3);
-        m_tree->Branch("rec_track_z_st3",          &rec_track_z_st3);
-        m_tree->Branch("rec_track_px_st3",         &rec_track_px_st3);
-        m_tree->Branch("rec_track_py_st3",         &rec_track_py_st3);
-        m_tree->Branch("rec_track_pz_st3",         &rec_track_pz_st3);
-        m_tree->Branch("rec_track_num_hits",       &rec_track_num_hits);
-        m_tree->Branch("rec_track_chisq",          &rec_track_chisq);
-        m_tree->Branch("rec_track_chisq_tgt",   &rec_track_chisq_tgt);
-        m_tree->Branch("rec_track_chisq_dump",     &rec_track_chisq_dump);
-        m_tree->Branch("rec_track_chisq_upstream", &rec_track_chisq_upstream);
-        m_tree->Branch("rec_track_x_tgt",          &rec_track_x_tgt);
-        m_tree->Branch("rec_track_y_tgt",          &rec_track_y_tgt);
-        m_tree->Branch("rec_track_z_tgt",          &rec_track_z_tgt);
-        m_tree->Branch("rec_track_px_tgt",         &rec_track_px_tgt);
-        m_tree->Branch("rec_track_py_tgt",         &rec_track_py_tgt);
-        m_tree->Branch("rec_track_pz_tgt",         &rec_track_pz_tgt);
-        m_tree->Branch("rec_track_x_dump",         &rec_track_x_dump);
-        m_tree->Branch("rec_track_y_dump",         &rec_track_y_dump);
-        m_tree->Branch("rec_track_z_dump",         &rec_track_z_dump);
-        m_tree->Branch("rec_track_px_dump",        &rec_track_px_dump);
-        m_tree->Branch("rec_track_py_dump",        &rec_track_py_dump);
-        m_tree->Branch("rec_track_pz_dump",        &rec_track_pz_dump);
-        m_tree->Branch("rec_hit_ids",              &rec_hit_ids);
-        m_tree->Branch("rec_track_hit_x",              &rec_track_hit_x);
-        m_tree->Branch("rec_track_hit_y",              &rec_track_hit_y);
-        }
 
 
         if (reco_dimu_mode == true) {
@@ -193,15 +170,8 @@ int DimuAnaRUS::InitRun(PHCompositeNode* startNode)
         m_tree->Branch("rec_dimuon_py_neg_tgt", &rec_dimuon_py_neg_tgt);
         m_tree->Branch("rec_dimuon_pz_neg_tgt", &rec_dimuon_pz_neg_tgt);
 
-        m_tree->Branch("rec_dimuon_px_pos_dump", &rec_dimuon_px_pos_dump);
-        m_tree->Branch("rec_dimuon_py_pos_dump", &rec_dimuon_py_pos_dump);
-        m_tree->Branch("rec_dimuon_pz_pos_dump", &rec_dimuon_pz_pos_dump);
-
-        m_tree->Branch("rec_dimuon_px_neg_dump", &rec_dimuon_px_neg_dump);
-        m_tree->Branch("rec_dimuon_py_neg_dump", &rec_dimuon_py_neg_dump);
-        m_tree->Branch("rec_dimuon_pz_neg_dump", &rec_dimuon_pz_neg_dump);
-
         m_tree->Branch("rec_dimuon_mass_tgt", &rec_dimuon_mass_tgt);
+        m_tree->Branch("rec_dimuon_pass_trig", &rec_dimuon_pass_trig);
 
         // track vertex positions of the two muons
         m_tree->Branch("rec_dimuon_x_pos_vtx", &rec_dimuon_x_pos_vtx);
@@ -227,6 +197,7 @@ int DimuAnaRUS::InitRun(PHCompositeNode* startNode)
 	if (true_mode) {
 		m_vec_trk = findNode::getClass<SQTrackVector>(startNode, "SQTruthTrackVector");
 		m_evt_true = findNode::getClass<SQMCEvent     >(startNode, "SQMCEvent");
+		m_true_vec_dim = findNode::getClass<SQDimuonVector>(startNode, "SQTruthDimuonVector");
 		if (!m_vec_trk || !m_evt_true) {
 			return Fun4AllReturnCodes::ABORTEVENT;
 		}
@@ -289,36 +260,14 @@ int DimuAnaRUS::process_event(PHCompositeNode* startNode)
 	int SourceFlag=0;
 	int true_proc = m_evt_true ? m_evt_true->get_process_id() : 0;
 	//cout <<" true process id "<< true_proc <<endl;
-	/*   //if (! m_evt->get_trigger(SQEvent::MATRIX1)) {
-	   if (! m_evt->get_trigger(SQEvent::NIM4)) {
-	   return Fun4AllReturnCodes::EVENT_OK;
-	   }
-	*/
-	//if (saveDimuonOnly && m_sq_dim_vec->empty()) {
-	//	return 0;  // Skip this event if no dimuons are present and the mode is enabled
-	//}
  
 	   eventID = m_evt->get_event_id();
 	   weight = m_evt_true ? m_evt_true->get_weight() : 1.0;
 	   runID = m_evt->get_run_id();
 	   spillID = m_evt->get_spill_id();
-	   rfID = m_evt->get_qie_rf_id();
-	   turnID = m_evt->get_qie_turn_id();
 
-	   fpgaTrigger[0] = m_evt->get_trigger(SQEvent::MATRIX1);
-	   fpgaTrigger[1] = m_evt->get_trigger(SQEvent::MATRIX2);
-	   fpgaTrigger[2] = m_evt->get_trigger(SQEvent::MATRIX3);
-	   fpgaTrigger[3] = m_evt->get_trigger(SQEvent::MATRIX4);
-	   fpgaTrigger[4] = m_evt->get_trigger(SQEvent::MATRIX5);
+	   evtPassTrigEmu = 0;
 
-	   nimTrigger[0] = m_evt->get_trigger(SQEvent::NIM1);
-	   nimTrigger[1] = m_evt->get_trigger(SQEvent::NIM2);
-	   nimTrigger[2] = m_evt->get_trigger(SQEvent::NIM3);
-	   nimTrigger[3] = m_evt->get_trigger(SQEvent::NIM4);
-	   nimTrigger[4] = m_evt->get_trigger(SQEvent::NIM5);
-	   for (int i = -16; i <= 16; ++i) {
-	   rfIntensity[i + 16] = m_evt->get_qie_rf_intensity(i);
-	   }
 
 	const double muon_mass = 0.10566;
 	TLorentzVector mu1;
@@ -326,6 +275,11 @@ int DimuAnaRUS::process_event(PHCompositeNode* startNode)
 	if(true_mode == true){
 		ResetTrueBranches();
 		ResetHitBranches();
+		if (m_true_vec_dim && m_true_vec_dim->size() > 0) {
+			double x1, x2, costh, phi;
+			UtilDimuon::CalcVar(m_true_vec_dim->at(0), true_dimuon_mass, true_dimuon_pT, x1, x2, true_dimuon_xF, costh, phi);
+			ptReWeight = GetPtReWeight(true_dimuon_pT, true_dimuon_xF, true_dimuon_mass);
+		}
 		for (unsigned int ii = 0; ii < m_vec_trk->size(); ii++) {
 
 			//cout << "inside the true track loop: "<<endl;
@@ -432,92 +386,9 @@ int DimuAnaRUS::process_event(PHCompositeNode* startNode)
 	//cout << "reco mode: "<< reco_mode << endl;
 	//std::cout << "Size of m_sq_dim_vec: " << m_sq_dim_vec->size() << std::endl;
 
-int index = -1;
-
 	if(reco_mode == true){
-		ResetRecoBranches();
-
-		if (!saveDimuonOnly) { // fill reco track branches
-		for (auto it = m_sq_trk_vec->begin(); it != m_sq_trk_vec->end(); ++it) {
-			index+=1;
-			SRecTrack* trk = dynamic_cast<SRecTrack*>(*it);
-
-			//cout << "track id: "<< trk->get_rec_track_id ()  <<" charge: " << trk->get_charge() << "index: "<<endl;
-
-			rec_track_id.push_back(index);  // where i_trk is the index in the reco track loop
-			// Basic track info
-			rec_track_charge.push_back(trk->get_charge());
-			rec_track_vx.push_back(trk->get_pos_vtx().X());
-			rec_track_vy.push_back(trk->get_pos_vtx().Y());
-			rec_track_vz.push_back(trk->get_pos_vtx().Z());
-			rec_track_px.push_back(trk->get_mom_vtx().Px());
-			rec_track_py.push_back(trk->get_mom_vtx().Py());
-			rec_track_pz.push_back(trk->get_mom_vtx().Pz());
-
-			// Station 1
-			rec_track_x_st1.push_back(trk->get_pos_st1().X());
-			rec_track_y_st1.push_back(trk->get_pos_st1().Y());
-			rec_track_z_st1.push_back(trk->get_pos_st1().Z());
-			rec_track_px_st1.push_back(trk->get_mom_st1().Px());
-			rec_track_py_st1.push_back(trk->get_mom_st1().Py());
-			rec_track_pz_st1.push_back(trk->get_mom_st1().Pz());
-
-			// Station 3
-			rec_track_x_st3.push_back(trk->get_pos_st3().X());
-			rec_track_y_st3.push_back(trk->get_pos_st3().Y());
-			rec_track_z_st3.push_back(trk->get_pos_st3().Z());
-			rec_track_px_st3.push_back(trk->get_mom_st3().Px());
-			rec_track_py_st3.push_back(trk->get_mom_st3().Py());
-			rec_track_pz_st3.push_back(trk->get_mom_st3().Pz());
-
-			// Chi-squared
-			rec_track_chisq.push_back(trk->get_chisq());
-			rec_track_chisq_tgt.push_back(trk->getChisqTarget());
-			rec_track_chisq_dump.push_back(trk->get_chisq_dump());
-			rec_track_chisq_upstream.push_back(trk->get_chisq_upstream());
-
-			// Number of hits
-			rec_track_num_hits.push_back(trk->get_num_hits());
-
-			// Target region
-			rec_track_x_tgt.push_back(trk->get_pos_target().X());
-			rec_track_y_tgt.push_back(trk->get_pos_target().Y());
-			rec_track_z_tgt.push_back(trk->get_pos_target().Z());
-			rec_track_px_tgt.push_back(trk->get_mom_target().Px());
-			rec_track_py_tgt.push_back(trk->get_mom_target().Py());
-			rec_track_pz_tgt.push_back(trk->get_mom_target().Pz());
-
-			// Dump region
-			rec_track_x_dump.push_back(trk->get_pos_dump().X());
-			rec_track_y_dump.push_back(trk->get_pos_dump().Y());
-			rec_track_z_dump.push_back(trk->get_pos_dump().Z());
-			rec_track_px_dump.push_back(trk->get_mom_dump().Px());
-			rec_track_py_dump.push_back(trk->get_mom_dump().Py());
-			rec_track_pz_dump.push_back(trk->get_mom_dump().Pz());
-
-			// Now fill hit IDs for this track
-			std::vector<int> hit_ids;
-			std::vector<double> hit_ids_pos_x;
-			std::vector<double> hit_ids_pos_y;
-			for (int i_hit = 0; i_hit < trk->get_num_hits(); ++i_hit) {
-				//cout <<"charge: "<< trk->get_charge()<< "  hit id of the tracks: " << trk->get_hit_id(i_hit) << endl;
-				hit_ids.push_back(trk->get_hit_id(i_hit));
-				auto [det_id, det_z_pos] = GetDetElemIDFromHitID(trk->get_hit_id(i_hit));
-				Double_t x = 0.0, y = 0.0;
-				trk->getExpPositionFast(static_cast<Double_t>(det_z_pos), x, y);
-				//cout << "x, y pos: (" << x << ", " << y << ")" << endl;
-				hit_ids_pos_x.push_back(x);
-				hit_ids_pos_y.push_back(y);
-			}
-			rec_hit_ids.push_back(hit_ids);
-			rec_track_hit_x.push_back(hit_ids_pos_x);
-			rec_track_hit_y.push_back(hit_ids_pos_y);
-		}
-		}
-
 		if(reco_dimu_mode==true){
 			ResetRecoDimuBranches();
-			int n_dimu_pass_trig = 0;
 			for (auto it = m_sq_dim_vec->begin(); it != m_sq_dim_vec->end(); it++) {
 				SRecDimuon& sdim = dynamic_cast<SRecDimuon&>(**it);
 				int trk_id_pos = sdim.get_track_id_pos();
@@ -557,8 +428,8 @@ int index = -1;
 				sdim.calcVariables(1); // 1 = target
 				if ((sdim.p_pos_target + sdim.p_neg_target).M() <= 0.) continue;
 
-
-				// Trigger emulation: require matched roads in opposite top/bottom halves
+				// Trigger emulation: matched roads in opposite top/bottom halves (flag only, no rejection)
+				bool dimu_pass_trig = true; // no emulation requested -> nothing to reject
 				if (reco_mode && (data_trig_mode || mc_trig_mode)) {
 					std::vector<int> list_road_pos = UtilTrack::FindMatchedRoads(&trk_pos);
 					std::vector<int> list_road_neg = UtilTrack::FindMatchedRoads(&trk_neg);
@@ -577,9 +448,9 @@ int index = -1;
 						     << "/" << list_road_nt.size() << "/" << list_road_nb.size()
 						     << "  pass = " << pass_trig << endl;
 					}
-					if (!pass_trig) continue;
+					dimu_pass_trig = pass_trig; // flag only; selection is applied offline
 				}
-				++n_dimu_pass_trig;
+				if (dimu_pass_trig) evtPassTrigEmu = 1;
 
 
 				//--------
@@ -660,20 +531,11 @@ int index = -1;
 				rec_dimuon_px_neg_tgt.push_back(sdim.p_neg_target.Px());
 				rec_dimuon_py_neg_tgt.push_back(sdim.p_neg_target.Py());
 				rec_dimuon_pz_neg_tgt.push_back(sdim.p_neg_target.Pz());
-				// ===== Dump hypothesis =====
-				sdim.calcVariables(2); // 2 = dump
-				rec_dimuon_px_pos_dump.push_back(sdim.p_pos_dump.Px());
-				rec_dimuon_py_pos_dump.push_back(sdim.p_pos_dump.Py());
-				rec_dimuon_pz_pos_dump.push_back(sdim.p_pos_dump.Pz());
-				rec_dimuon_px_neg_dump.push_back(sdim.p_neg_dump.Px());
-				rec_dimuon_py_neg_dump.push_back(sdim.p_neg_dump.Py());
-				rec_dimuon_pz_neg_dump.push_back(sdim.p_neg_dump.Pz());
 
 				TLorentzVector mom_tgt = sdim.p_pos_target + sdim.p_neg_target;
 				rec_dimuon_mass_tgt.push_back(mom_tgt.M());
+				rec_dimuon_pass_trig.push_back(dimu_pass_trig ? 1 : 0);
 			}
-			// Drop the event (no tree entry) if no dimuon passes the trigger emulation
-			if ((data_trig_mode || mc_trig_mode) && n_dimu_pass_trig == 0) return Fun4AllReturnCodes::EVENT_OK;
 		}
 	}
 	m_tree->Fill();
@@ -699,6 +561,8 @@ void DimuAnaRUS::ResetHitBranches() {
 	driftDistance.clear();
 }
 void DimuAnaRUS::ResetTrueBranches() {
+	true_dimuon_mass = true_dimuon_pT = true_dimuon_xF = -999;
+	ptReWeight = 1.0;
 	gCharge.clear(); gTrackID.clear();
 	gvx.clear(); gvy.clear(); gvz.clear();
 	gpx.clear(); gpy.clear(); gpz.clear();
@@ -708,29 +572,6 @@ void DimuAnaRUS::ResetTrueBranches() {
 	gpx_st3.clear(); gpy_st3.clear(); gpz_st3.clear();
 }
 
-void DimuAnaRUS::ResetRecoBranches() {
-    rec_track_id.clear();
-    rec_track_charge.clear();
-    rec_track_vx.clear(); rec_track_vy.clear(); rec_track_vz.clear();
-    rec_track_px.clear(); rec_track_py.clear(); rec_track_pz.clear();
-    rec_track_x_st1.clear(); rec_track_y_st1.clear(); rec_track_z_st1.clear();
-    rec_track_px_st1.clear(); rec_track_py_st1.clear(); rec_track_pz_st1.clear();
-    rec_track_x_st3.clear(); rec_track_y_st3.clear(); rec_track_z_st3.clear();
-    rec_track_px_st3.clear(); rec_track_py_st3.clear(); rec_track_pz_st3.clear();
-    rec_track_chisq.clear();
-    rec_track_chisq_tgt.clear();
-    rec_track_chisq_dump.clear();
-    rec_track_chisq_upstream.clear();
-    rec_track_num_hits.clear();
-    rec_track_x_tgt.clear(); rec_track_y_tgt.clear(); rec_track_z_tgt.clear();
-    rec_track_px_tgt.clear(); rec_track_py_tgt.clear(); rec_track_pz_tgt.clear();
-    rec_track_x_dump.clear(); rec_track_y_dump.clear(); rec_track_z_dump.clear();
-    rec_track_px_dump.clear(); rec_track_py_dump.clear(); rec_track_pz_dump.clear();
-    rec_hit_ids.clear();
-    rec_track_hit_x.clear();
-    rec_track_hit_y.clear();
-}
-
 void DimuAnaRUS::ResetRecoDimuBranches() {
     rec_dimuon_id.clear(); rec_dimuon_true_id.clear(); rec_dimuon_track_id_pos.clear(); rec_dimuon_track_id_neg.clear();
     rec_dimuon_x.clear(); rec_dimuon_y.clear(); rec_dimuon_z.clear();
@@ -738,9 +579,8 @@ void DimuAnaRUS::ResetRecoDimuBranches() {
     rec_dimuon_px_neg.clear(); rec_dimuon_py_neg.clear(); rec_dimuon_pz_neg.clear();
     rec_dimuon_px_pos_tgt.clear(); rec_dimuon_py_pos_tgt.clear(); rec_dimuon_pz_pos_tgt.clear();
     rec_dimuon_px_neg_tgt.clear(); rec_dimuon_py_neg_tgt.clear(); rec_dimuon_pz_neg_tgt.clear();
-    rec_dimuon_px_pos_dump.clear(); rec_dimuon_py_pos_dump.clear(); rec_dimuon_pz_pos_dump.clear();
-    rec_dimuon_px_neg_dump.clear(); rec_dimuon_py_neg_dump.clear(); rec_dimuon_pz_neg_dump.clear();
     rec_dimuon_mass_tgt.clear();
+    rec_dimuon_pass_trig.clear();
 
     rec_dimuon_x_pos_vtx.clear();
     rec_dimuon_y_pos_vtx.clear();
@@ -792,19 +632,3 @@ int DimuAnaRUS::DecodeSourceFlag(unsigned int encoded) {
 int DimuAnaRUS::DecodeProcessID(unsigned int encoded) {
 	return encoded & 0x1F;
 }
-
-std::pair<int, int> DimuAnaRUS::GetDetElemIDFromHitID(int hit_id) const {
-    if (!m_hit_vec) return {-1, -1}; 
-
-    for (const auto* hit : *m_hit_vec) {
-        if (hit->get_hit_id() == hit_id) {
-            GeomSvc::UseDbSvc(true);
-            GeomSvc* geom = GeomSvc::instance();
-            //cout << "det: "<< hit->get_detector_id() <<" detector z pos: "<< geom->getDetectorZ0(geom->getDetectorName(hit->get_detector_id())) <<endl;
-            return {hit->get_detector_id(), geom->getDetectorZ0(geom->getDetectorName(hit->get_detector_id()))};
-        }
-    }
-
-    return {-1, -1}; // Not found
-}
-
