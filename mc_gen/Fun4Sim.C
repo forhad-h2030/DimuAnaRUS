@@ -3,26 +3,25 @@
 #include <top/G4_InsensitiveVolumes.C>
 #include <top/G4_SensitiveDetectors.C>
 R__LOAD_LIBRARY(libdimu_ana_rus)
-R__LOAD_LIBRARY(libfun4all)
-R__LOAD_LIBRARY(libPHPythia8)
-R__LOAD_LIBRARY(libg4detectors)
-R__LOAD_LIBRARY(libg4testbench)
-R__LOAD_LIBRARY(libg4eval)
-R__LOAD_LIBRARY(libg4dst)
-R__LOAD_LIBRARY(libdptrigger)
-R__LOAD_LIBRARY(libembedding)
-R__LOAD_LIBRARY(libevt_filter)
-R__LOAD_LIBRARY(libktracker)
-R__LOAD_LIBRARY(libSQPrimaryGen)
-R__LOAD_LIBRARY(fun4all_rus_file_manager)
+	R__LOAD_LIBRARY(libfun4all)
+	R__LOAD_LIBRARY(libPHPythia8)
+	R__LOAD_LIBRARY(libg4detectors)
+	R__LOAD_LIBRARY(libg4testbench)
+	R__LOAD_LIBRARY(libg4eval)
+	R__LOAD_LIBRARY(libg4dst)
+	R__LOAD_LIBRARY(libdptrigger)
+	R__LOAD_LIBRARY(libembedding)
+	R__LOAD_LIBRARY(libevt_filter)
+	R__LOAD_LIBRARY(libktracker)
+	R__LOAD_LIBRARY(libSQPrimaryGen)
+	R__LOAD_LIBRARY(fun4all_rus_file_manager)
 
-
-using namespace std;
+	using namespace std;
 
 int Fun4Sim(const int nevent = 10)
 {
-	//const double target_coil_pos_z = -300;
-	const double target_coil_pos_z = -645; //only for the upstream
+	const double target_coil_pos_z = -300;
+	//const double target_coil_pos_z = -645; //only for the upstream
 	const int nmu = 1;
 	int embedding_opt = 0;
 	const bool legacy_rec_container = true;
@@ -44,11 +43,11 @@ int Fun4Sim(const int nevent = 10)
 	const double KMAGSTR = -1.025;
 
 	//! Particle generator flag.  Only one of these must be true.
-	const bool gen_pythia8  = false;
+	const bool gen_pythia8  = true;
 	const bool gen_cosmic   = false;
 	const bool gen_particle = false;
 	const bool read_hepmc   = false;
-	const bool gen_e906dim =  true; // cf. SQPrimaryParticleG
+	const bool gen_e906dim =  false; // cf. SQPrimaryParticleG
 	//! Use SQPrimaryVertexGen or not.
 	const bool SQ_vtx_gen = true;
 
@@ -75,7 +74,7 @@ int Fun4Sim(const int nevent = 10)
 	rc->Print();
 
 	GeomSvc *geom_svc = GeomSvc::instance();
-	//const double x0_shift = 0.0; //cm 
+	//const double x0_shift = 0.0; //cm
 	//std::cout << "D2X::X0: " << geom_svc->getDetectorX0("D2X") << std::endl;
 	//geom_svc->setDetectorX0("D2X", geom_svc->getDetectorX0("D2X")+x0_shift);
 	//std::cout << "D2X::X0: " << geom_svc->getDetectorX0("D2X") << std::endl;
@@ -86,18 +85,17 @@ int Fun4Sim(const int nevent = 10)
 	Fun4AllServer *se = Fun4AllServer::instance();
 	se->Verbosity(0);
 
-
 	// pythia8
-	if(gen_pythia8) {    
+	if(gen_pythia8) {
 		PHPythia8 *pythia8 = new PHPythia8();
 		//pythia8->Verbosity(99);
-		pythia8->set_config_file("phpythia8_DY.cfg");
-	    //pythia8->set_config_file("phpythia8_Jpsi.cfg"); // Jpsi, Jpsi_direct, psip
-	    //pythia8->set_config_file("phpythia8_psip.cfg"); // Jpsi, Jpsi_direct, psip
+		pythia8->set_config_file("phpythia8_DY_tuned.cfg"); // tuned 2 -> 2 DY (tune38 settings)
+		//pythia8->set_config_file("phpythia8_Jpsi.cfg"); // Jpsi, Jpsi_direct, psip
+		//pythia8->set_config_file("phpythia8_psip.cfg"); // Jpsi, Jpsi_direct, psip
 		if(SQ_vtx_gen) pythia8->enableLegacyVtxGen();
 		else{
 			pythia8->set_vertex_distribution_mean(0, 0, target_coil_pos_z, 0);
-		} 
+		}
 		pythia8->set_embedding_id(1);
 		se->registerSubsystem(pythia8);
 
@@ -143,11 +141,11 @@ int Fun4Sim(const int nevent = 10)
 		if(FMAGSTR>0)
 			genp->set_pxpypz_range(-6,6, -3,3, 10,100);
 		else
-			{genp->set_pxpypz_range(-6.0,6.0, -4,4, 30, 60);
+		{genp->set_pxpypz_range(-6.0,6.0, -4,4, 30, 60);
 			genp->set_eta_range(6.0, 8.0);}
 
 		//genp->set_pt_range(0.0,4.0, 0.6);
-		//genp->set_eta_range(2.0, 6.0); 
+		//genp->set_eta_range(2.0, 6.0);
 		genp->Verbosity(0);
 		se->registerSubsystem(genp);
 	}
@@ -169,7 +167,7 @@ int Fun4Sim(const int nevent = 10)
 		if(FMAGSTR>0)
 			genm->set_pxpypz_range(-6,6, -3,3, 10,100);
 		else
-			{genm->set_pxpypz_range(-6,6, -4,4, 30,60);
+		{genm->set_pxpypz_range(-6,6, -4,4, 30,60);
 			genm->set_eta_range(6.0, 8.0);}
 
 		genm->Verbosity(2);
@@ -182,14 +180,14 @@ int Fun4Sim(const int nevent = 10)
 		const bool pythia_gen = false;
 		const bool drellyan_gen =true;
 		const bool JPsi_gen = false;
-		const bool Psip_gen = false;  
+		const bool Psip_gen = false;
 
 		if(drellyan_gen){
 			e906legacy->set_xfRange(-0.5, 1.0); //[-1.,1.]
 			e906legacy->set_massRange(0.25, 10.0);
 			e906legacy->enableDrellYanGen();
 		}
-		if(Psip_gen){ 
+		if(Psip_gen){
 			e906legacy->set_xfRange(0.1, 0.5); //[-1.,1.]
 			e906legacy->enablePsipGen();
 		}
@@ -197,7 +195,7 @@ int Fun4Sim(const int nevent = 10)
 			e906legacy->set_xfRange(0.7, 1.0); //[-1.,1.]
 			e906legacy->enableJPsiGen();
 		}
-		if(pythia_gen){ 
+		if(pythia_gen){
 			e906legacy->enablePythia();
 			e906legacy->set_config_file("phpythia8_DY.cfg");
 		}
@@ -253,9 +251,9 @@ int Fun4Sim(const int nevent = 10)
 	se->registerSubsystem(new TruthNodeMaker());
 
 	//Apply additonal cut after event generation
-        //MuonTrackFilter* muon_filter = new MuonTrackFilter();
-        //muon_filter->SetAngleThreshold(0.0, 50.0); //in degree
-        //se->registerSubsystem(muon_filter);
+	//MuonTrackFilter* muon_filter = new MuonTrackFilter();
+	//muon_filter->SetAngleThreshold(0.0, 50.0); //in degree
+	//se->registerSubsystem(muon_filter);
 	/// Save only events that are in the geometric acceptance.
 
 	SQGeomAcc* geom_acc = new SQGeomAcc();
@@ -265,8 +263,6 @@ int Fun4Sim(const int nevent = 10)
 	geom_acc->SetNumOfH1EdgeElementsExcluded(4); // Exclude 4 elements at H1 edges
 	se->registerSubsystem(geom_acc);
 
-	// Make SQ nodes for truth info
-	se->registerSubsystem(new TruthNodeMaker());
 	// embedding
 	if(embedding_opt == 1) {
 		SRawEventEmbed *embed = new SRawEventEmbed("SRawEventEmbed");
@@ -295,7 +291,7 @@ int Fun4Sim(const int nevent = 10)
 
 	SQReco* reco = new SQReco();
 	reco->Verbosity(1);
-	reco->set_legacy_rec_container(false); 
+	reco->set_legacy_rec_container(false);
 	reco->set_geom_file_name((string)gSystem->Getenv("E1039_RESOURCE") + "/geometry/geom_run005433.root");
 	reco->set_enable_KF(true);
 	reco->setInputTy(SQReco::E1039);
@@ -325,13 +321,13 @@ int Fun4Sim(const int nevent = 10)
 	// Output
 	///////////////////////////////////////////
 
-    //Fun4AllRUSOutputManager* tree = new Fun4AllRUSOutputManager();
-    //tree->SetTreeName("tree");
-    //tree->SetFileName("RUS_out.root");
-    //se->registerOutputManager(tree);
+	//Fun4AllRUSOutputManager* tree = new Fun4AllRUSOutputManager();
+	//tree->SetTreeName("tree");
+	//tree->SetFileName("RUS_out.root");
+	//se->registerOutputManager(tree);
 
 	// DST output manager
-    //Fun4AllDstOutputManager *out = new Fun4AllDstOutputManager("DSTOUT", "DST.root");
+	//Fun4AllDstOutputManager *out = new Fun4AllDstOutputManager("DSTOUT", "DST.root");
 	//se->registerOutputManager(out);
 
 	//if(gen_pythia8 && !read_hepmc) {
@@ -340,14 +336,14 @@ int Fun4Sim(const int nevent = 10)
 	//  se->registerOutputManager(out);
 	//}
 	DimuAnaRUS* dimuAna = new DimuAnaRUS();
-    dimuAna->SetTreeName("tree");
+	dimuAna->SetTreeName("tree");
 	dimuAna->SetMCTrueMode(false);
-    dimuAna->SetOutputFileName("RUS.root");
-    dimuAna->SetRecoMode(true);
-    dimuAna->SetMCTriggerEmu(true);
-    dimuAna->SetRecoDimuMode(true);
-    dimuAna->EnableSQHit(false);
-    se->registerSubsystem(dimuAna);
+	dimuAna->SetOutputFileName("RUS.root");
+	dimuAna->SetRecoMode(true);
+	dimuAna->SetMCTriggerEmu(true);
+	dimuAna->SetRecoDimuMode(true);
+	dimuAna->EnableSQHit(false);
+	se->registerSubsystem(dimuAna);
 	const bool count_only_good_events = true;
 	se->run(nevent, count_only_good_events);
 	PHGeomUtility::ExportGeomtry(se->topNode(),"geom.root");
