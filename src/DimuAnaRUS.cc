@@ -173,6 +173,17 @@ int DimuAnaRUS::InitRun(PHCompositeNode* startNode)
 			m_tree->Branch("rec_dimuon_mass_tgt", &rec_dimuon_mass_tgt);
 			m_tree->Branch("rec_dimuon_pass_trig", &rec_dimuon_pass_trig);
 
+			// chi2: dimuon vertex fit, and per track the overall fit and the three vertex hypotheses
+			m_tree->Branch("rec_dimuon_chisq", &rec_dimuon_chisq);
+			m_tree->Branch("rec_dimuon_chisq_pos", &rec_dimuon_chisq_pos);
+			m_tree->Branch("rec_dimuon_chisq_neg", &rec_dimuon_chisq_neg);
+			m_tree->Branch("rec_dimuon_chisq_tgt_pos", &rec_dimuon_chisq_tgt_pos);
+			m_tree->Branch("rec_dimuon_chisq_tgt_neg", &rec_dimuon_chisq_tgt_neg);
+			m_tree->Branch("rec_dimuon_chisq_dump_pos", &rec_dimuon_chisq_dump_pos);
+			m_tree->Branch("rec_dimuon_chisq_dump_neg", &rec_dimuon_chisq_dump_neg);
+			m_tree->Branch("rec_dimuon_chisq_upstream_pos", &rec_dimuon_chisq_upstream_pos);
+			m_tree->Branch("rec_dimuon_chisq_upstream_neg", &rec_dimuon_chisq_upstream_neg);
+
 			// track vertex positions of the two muons
 			m_tree->Branch("rec_dimuon_x_pos_vtx", &rec_dimuon_x_pos_vtx);
 			m_tree->Branch("rec_dimuon_y_pos_vtx", &rec_dimuon_y_pos_vtx);
@@ -550,6 +561,16 @@ int DimuAnaRUS::process_event(PHCompositeNode* startNode)
 				TLorentzVector mom_tgt = sdim.p_pos_target + sdim.p_neg_target;
 				rec_dimuon_mass_tgt.push_back(mom_tgt.M());
 				rec_dimuon_pass_trig.push_back(dimu_pass_trig ? 1 : 0);
+
+				rec_dimuon_chisq.push_back(sdim.get_chisq());
+				rec_dimuon_chisq_pos.push_back(trk_pos.get_chisq());
+				rec_dimuon_chisq_neg.push_back(trk_neg.get_chisq());
+				rec_dimuon_chisq_tgt_pos.push_back(chisq_target_pos);
+				rec_dimuon_chisq_tgt_neg.push_back(chisq_target_neg);
+				rec_dimuon_chisq_dump_pos.push_back(chisq_dump_pos);
+				rec_dimuon_chisq_dump_neg.push_back(chisq_dump_neg);
+				rec_dimuon_chisq_upstream_pos.push_back(chisq_upstream_pos);
+				rec_dimuon_chisq_upstream_neg.push_back(chisq_upstream_neg);
 			}
 		}
 	}
@@ -595,6 +616,10 @@ void DimuAnaRUS::ResetRecoDimuBranches() {
 	rec_dimuon_px_neg_tgt.clear(); rec_dimuon_py_neg_tgt.clear(); rec_dimuon_pz_neg_tgt.clear();
 	rec_dimuon_mass_tgt.clear();
 	rec_dimuon_pass_trig.clear();
+	rec_dimuon_chisq.clear(); rec_dimuon_chisq_pos.clear(); rec_dimuon_chisq_neg.clear();
+	rec_dimuon_chisq_tgt_pos.clear(); rec_dimuon_chisq_tgt_neg.clear();
+	rec_dimuon_chisq_dump_pos.clear(); rec_dimuon_chisq_dump_neg.clear();
+	rec_dimuon_chisq_upstream_pos.clear(); rec_dimuon_chisq_upstream_neg.clear();
 
 	rec_dimuon_x_pos_vtx.clear();
 	rec_dimuon_y_pos_vtx.clear();

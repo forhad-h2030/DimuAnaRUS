@@ -138,7 +138,12 @@ class DimuAnaRUS: public SubsysReco {
 		rec_dimuon_px_pos_st1, rec_dimuon_py_pos_st1, rec_dimuon_pz_pos_st1,
 		rec_dimuon_px_neg_st1, rec_dimuon_py_neg_st1, rec_dimuon_pz_neg_st1,
 		rec_dimuon_px_pos_st3, rec_dimuon_py_pos_st3, rec_dimuon_pz_pos_st3,
-		rec_dimuon_px_neg_st3, rec_dimuon_py_neg_st3, rec_dimuon_pz_neg_st3;
+		rec_dimuon_px_neg_st3, rec_dimuon_py_neg_st3, rec_dimuon_pz_neg_st3,
+		rec_dimuon_chisq,
+		rec_dimuon_chisq_pos, rec_dimuon_chisq_neg,
+		rec_dimuon_chisq_tgt_pos, rec_dimuon_chisq_tgt_neg,
+		rec_dimuon_chisq_dump_pos, rec_dimuon_chisq_dump_neg,
+		rec_dimuon_chisq_upstream_pos, rec_dimuon_chisq_upstream_neg;
 
 };
 
